@@ -11,7 +11,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
 
-const devToken = "Get Token From https://developer.chrome.com/origintrials/#/trials/my"
+const devToken = "Get Token From https://developer.chrome.com/origintrials"
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -33,6 +33,7 @@ export default defineConfig({
   }
 })
 ```
+
 
 ```json Typescript Config
 // tsc config 

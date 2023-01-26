@@ -1,7 +1,7 @@
 // vite config
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
-const devToken = "Get Token From https://developer.chrome.com/origintrials"
+import devToken from './DevToken.txt?raw' // register a token, create a file call DevToken.txt and paste the token in it.
 
 // https://vitejs.dev/config/
 export default defineConfig({
