@@ -3,7 +3,16 @@ import reactLogo from './assets/react.svg'
 import './App.css'
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [count, setCount] = useState(0);
+
+  if(navigator.gpu)
+  {
+    console.log("gpu found");
+  }
+  else
+  {
+    console.log("now gpu found");
+  }
 
   return (
     <div className="App">
