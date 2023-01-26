@@ -34,6 +34,7 @@ export default defineConfig({
 })
 ```
 
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/3.png "When Creating Token...")
 
 ```json Typescript Config
 // tsc config 
