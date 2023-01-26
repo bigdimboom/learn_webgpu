@@ -5,7 +5,7 @@
 3. npm i @webgpu/types
 4. Because webgpu is a experimental, you need to register an tail token https://developer.chrome.com/origintrials/
 
-```javascript
+```javascript Vite Config
 // vite config
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
@@ -33,29 +33,30 @@ export default defineConfig({
 })
 ```
 
-```json
-// tsc config
+```json Typescript Config
+// tsc config 
 {
   "compilerOptions": {
-      "target": "ESNext",
-      "useDefineForClassFields": true,
-      "module": "ESNext",
-      "lib": ["ESNext", "DOM"],
-      "moduleResolution": "Node",
-      "sourceMap": true,
-      "resolveJsonModule": true,
-      "esModuleInterop": true,
-      "noEmit": true,
-      "strict": true,
-      "noUnusedLocals": true,
-      "noUnusedParameters": true,
-      "noImplicitReturns": true,
-      "noImplicitAny": true,
-      "noImplicitThis" : true,
-      "experimentalDecorators": true,
-      "types": ["vite/client", "@webgpu/types"]
+    "target": "ESNext",
+    "useDefineForClassFields": true,
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "allowJs": false,
+    "skipLibCheck": true,
+    "esModuleInterop": false,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "ESNext",
+    "moduleResolution": "Node",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "types": ["vite/client", "@webgpu/types"]
   },
   "include": ["src"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules"],
+  "references": [{ "path": "./tsconfig.node.json" }]
 }
+
 ```
