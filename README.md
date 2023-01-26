@@ -5,6 +5,7 @@
 3. npm i @webgpu/types
 4. Because webgpu is a experimental, you need to register an tail token https://developer.chrome.com/origintrials/
 
+```javascript
 // vite config
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react-swc'
@@ -30,7 +31,9 @@ export default defineConfig({
     port: 3000
   }
 })
+```
 
+```json
 // tsc config
 {
   "compilerOptions": {
@@ -55,3 +58,4 @@ export default defineConfig({
   "include": ["src"],
   "exclude": ["node_modules"]
 }
+```
