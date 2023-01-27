@@ -6,6 +6,7 @@
 4. to install ViTest "npm install -D vitest"
 5. "npm install"
 4. Because webgpu is a experimental, you need to register an tail token https://developer.chrome.com/origintrials/
+5. run project: "npx vite"
 
 ```javascript Vite Config
 // vite config
@@ -35,6 +36,7 @@ export default defineConfig({
 })
 ```
 
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/3.png "When Creating Token...")
 
 ```json Typescript Config
 // tsc config 
