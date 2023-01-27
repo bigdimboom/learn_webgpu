@@ -5,6 +5,7 @@
 3. "npm i @webgpu/types" and "npm install --save @webgpu/types"
 5. "npm install"
 4. Because webgpu is a experimental, you need to register an tail token https://developer.chrome.com/origintrials/
+5. run project: "npx vite"
 
 ```javascript Vite Config
 // vite config
