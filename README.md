@@ -8,6 +8,12 @@
 4. Because webgpu is a experimental, you need to register an tail token https://developer.chrome.com/origintrials/
 5. run project: "npx vite"
 
+## Additional Info.
+1. To Debug React Components in Chromes: 
+  1. visit https://chrome.google.com/webstore/detail/react-developer-tools/fmkadmapgofadopljbjfkapdkoienihi?hl=en
+  2. for other browsers: npm install -g react-devtools, and then run "react-devtools" to activate the tool
+2. React Docs: https://beta.reactjs.org/
+
 ```javascript Vite Config
 // vite config
 import { defineConfig } from 'vite'
