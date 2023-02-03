@@ -1,18 +1,21 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import './App.css'
+import { useState, useEffect, useRef } from "react";
+import reactLogo from "./assets/react.svg";
+import "./App.css";
 
 function App() {
   const [count, setCount] = useState(0);
 
-  if(navigator.gpu)
-  {
-    console.log("gpu found");
-  }
-  else
-  {
-    console.log("now gpu found");
-  }
+  const [gpuAvailable, setGPUAvailable] = useState(false);
+
+  useEffect(() => {
+    if (navigator.gpu) {
+      navigator.gpu.requestAdapter().then((adapter) => {
+        if (adapter) {
+          setGPUAvailable(true);
+        }
+      });
+    }
+  }, []);
 
   return (
     <div className="App">
@@ -36,8 +39,9 @@ function App() {
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
+      <div>WebGPU: {gpuAvailable ? "available" : "not available"}</div>;
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
