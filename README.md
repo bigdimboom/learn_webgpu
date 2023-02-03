@@ -73,4 +73,4 @@ export default defineConfig({
 ```
 
 ## Chapter One: Basic Triangle
-![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/basic_triangle.jpg "Chapter 1")
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/basic_triangle.JPG "Chapter 1")
