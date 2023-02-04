@@ -2,10 +2,25 @@ import { useState, useEffect, useRef } from "react";
 import reactLogo from "./assets/react.svg";
 import "./App.css";
 
+import textureUrl from "./assets/texture.png?url";
+
 function App() {
   const [count, setCount] = useState(0);
 
   const [gpuAvailable, setGPUAvailable] = useState(false);
+
+  const imageRef = useRef<HTMLImageElement>(null);
+
+  const loadImage = async () => {
+    // fetch an image and upload to GPUTexture
+    //const res = await fetch(textureUrl);
+    // const img = await res.blob()
+    const img = imageRef.current;
+    if(!img) return;
+
+    img.src = textureUrl;
+    await img.decode();
+  }
 
   useEffect(() => {
     if (navigator.gpu) {
@@ -15,6 +30,9 @@ function App() {
         }
       });
     }
+
+    // loadImage();
+
   }, []);
 
   return (
@@ -40,6 +58,7 @@ function App() {
         Click on the Vite and React logos to learn more
       </p>
       <div>WebGPU: {gpuAvailable ? "available" : "not available"}</div>;
+      {/* <img ref={imageRef}></img> */}
     </div>
   );
 }

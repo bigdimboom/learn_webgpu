@@ -1,46 +1,10 @@
 // import { useState, useEffect, useRef, useMemo } from "react";
 // import reactLogo from "./assets/react.svg";
 
+import { initWebGPU } from "../utils/WgpuContext";
 import shaderSource from "./BasicShader.wgsl?raw";
 
-interface Size {
-  width: number;
-  height: number;
-}
 
-interface Context {
-  device: GPUDevice;
-  context: GPUCanvasContext;
-  format: GPUTextureFormat;
-  size?: Size;
-}
-
-// initialize webgpu device & config canvas context
-async function initWebGPU(canvas: HTMLCanvasElement): Promise<Context> {
-  if (!navigator.gpu) throw new Error("Not Support WebGPU");
-
-  const adapter = await navigator.gpu.requestAdapter({
-    powerPreference: "high-performance",
-    // powerPreference: 'low-power'
-  });
-
-  if (!adapter) throw new Error("No Adapter Found");
-  const device = await adapter.requestDevice();
-  const context = canvas.getContext("webgpu") as GPUCanvasContext;
-  const format = navigator.gpu.getPreferredCanvasFormat();
-  const devicePixelRatio = window.devicePixelRatio || 1;
-  canvas.width = canvas.clientWidth * devicePixelRatio;
-  canvas.height = canvas.clientHeight * devicePixelRatio;
-  const size = { width: canvas.width, height: canvas.height };
-  context.configure({
-    // json specific format when key and value are the same
-    device,
-    format,
-    // prevent chrome warning
-    alphaMode: "opaque",
-  });
-  return { device, context, format, size };
-}
 
 // create a simple pipiline
 async function initPipeline(
@@ -107,7 +71,7 @@ export async function Run(canvas: HTMLCanvasElement) {
   const pipeline = await initPipeline(ctx.device, ctx.format);
 
   function render() {
-    draw(ctx.device, ctx.context, pipeline);
+    draw(ctx.device, ctx.canvasCtx, pipeline);
     requestAnimationFrame(render);
   }
 
