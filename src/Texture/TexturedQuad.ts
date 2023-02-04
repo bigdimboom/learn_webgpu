@@ -2,6 +2,7 @@ import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
 import shaderSource from "./QuadShader.wgsl?raw";
 
 import textureUrl from "../assets/texture.png?url";
+import workerUrl from "./TextureLoader.ts?url";
 
 interface RenderData {
   vbo: GPUBuffer;
@@ -11,7 +12,7 @@ interface RenderData {
   bindGroup: GPUBindGroup;
 }
 
-async function initData(ctx: WGPUContext): Promise<RenderData> {
+async function initData(ctx: WGPUContext, bitmap: ImageBitmap): Promise<RenderData> {
   // vertex
   const pos_uvs = new Float32Array(
     [
@@ -37,19 +38,13 @@ async function initData(ctx: WGPUContext): Promise<RenderData> {
   });
 
   // texture
-  // fetch an image and upload to GPUTexture
-  const res = await fetch(textureUrl);
-  const img = await res.blob();
-  // const img = document.createElement("img") as HTMLImageElement;
-  // img.src = textureUrl;
-  // await img.decode();
-  const bitmap = await createImageBitmap(img);
   const texture = ctx.device.createTexture({
     format: "rgba8unorm",
     size: [bitmap.width, bitmap.height, 1],
-    usage: GPUTextureUsage.TEXTURE_BINDING | 
-           GPUTextureUsage.COPY_DST | 
-           GPUTextureUsage.RENDER_ATTACHMENT,
+    usage:
+      GPUTextureUsage.TEXTURE_BINDING |
+      GPUTextureUsage.COPY_DST |
+      GPUTextureUsage.RENDER_ATTACHMENT,
   });
   const sampler = ctx.device.createSampler({
     label: "texture sampler",
@@ -64,20 +59,23 @@ async function initData(ctx: WGPUContext): Promise<RenderData> {
     [bitmap.width, bitmap.height, 1]
   );
 
-  // const pipelineLayout = ctx.device.createPipelineLayout({
-  //   bindGroupLayouts:[
-  //     ctx.device.createBindGroupLayout({
-  //       entries:[
-  //         {binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler:{}},
-  //         {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture:{}},
-  //       ],
-  //       label: "bind group layout"
-  //     })
-  //   ]
-  // });
+  /*
+  // pipeline layout example
+  const pipelineLayout = ctx.device.createPipelineLayout({
+    bindGroupLayouts:[
+      ctx.device.createBindGroupLayout({
+        entries:[
+          {binding: 0, visibility: GPUShaderStage.FRAGMENT, sampler:{}},
+          {binding: 1, visibility: GPUShaderStage.FRAGMENT, texture:{}},
+        ],
+        label: "bind group layout"
+      })
+    ]
+  });
+  */
 
   const pipeline = await ctx.device.createRenderPipelineAsync({
-    layout: 'auto',
+    layout: "auto",
     vertex: {
       entryPoint: "vs_main",
       module: ctx.device.createShaderModule({
@@ -114,7 +112,7 @@ async function initData(ctx: WGPUContext): Promise<RenderData> {
       { binding: 0, resource: sampler },
       { binding: 1, resource: texture.createView() },
     ],
-    layout: pipeline.getBindGroupLayout(0)
+    layout: pipeline.getBindGroupLayout(0),
   });
 
   return {
@@ -122,7 +120,7 @@ async function initData(ctx: WGPUContext): Promise<RenderData> {
     ibo: ibo,
     nVerts: indices.length,
     pipeline: pipeline,
-    bindGroup: bindGroup
+    bindGroup: bindGroup,
   };
 }
 
@@ -156,14 +154,27 @@ async function draw(ctx: WGPUContext, data: RenderData) {
 }
 
 export async function Run(canvas: HTMLCanvasElement) {
-  const ctx = await initWebGPU(canvas);
-  const data = await initData(ctx);
 
-  function render() {
-    draw(ctx, data);
+  const ctx = await initWebGPU(canvas);
+  let renderData: RenderData;
+
+  const worker = new Worker(workerUrl, { type: 'module' });
+  worker.postMessage({ texPath : textureUrl});
+  worker.onmessage = ({ data }) => {
+    console.log("main thread: ", data.status);
+    if(data.status)
+    {
+      (async ()=>{
+        renderData = await initData(ctx, data.bitmap);
+        requestAnimationFrame(render);
+      })();
+    }
+  };
+
+  async function render() {
+    draw(ctx, renderData);
     requestAnimationFrame(render);
   }
-  requestAnimationFrame(render);
 }
 
 Run(document.getElementById("main_canvas") as HTMLCanvasElement);

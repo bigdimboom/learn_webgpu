@@ -76,4 +76,6 @@ export default defineConfig({
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/basic_triangle.JPG "Chapter 1")
 
 ## Chapter 2: Textured Quad
+1. load texture and display
+2. load texture resource from a worker thread
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/textured_quad.jpg "Chapter 2")
