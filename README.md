@@ -79,3 +79,8 @@ export default defineConfig({
 1. load texture and display
 2. load texture resource from a worker thread
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/textured_quad.jpg "Chapter 2")
+
+## Chapter 2: Uniform
+1. Single Uniform Buffer (2 matrices: mvp and modelview)
+2. Configure BindGroup: (with single buffer, the data alignment must be 256) 
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/spin_cube.gif "Chapter 2")
