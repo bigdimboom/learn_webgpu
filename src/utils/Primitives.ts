@@ -1,4 +1,4 @@
-import { initWebGPU } from "../utils/WgpuContext";
+import { initWebGPU } from "./WgpuContext";
 import { vec3 } from "gl-matrix";
 
 export class UnitCube {
@@ -44,9 +44,11 @@ export class UnitCube {
       2, 3, 6, 6, 3, 7,
     ]);
 
-    const tmpNormals: vec3[] = new Array(vertices.length).fill(
-      vec3.fromValues(0, 0, 0)
-    );
+    const tmpNormals = new Array<vec3>(vertices.length);
+    for (let i = 0; i < tmpNormals.length; ++i) 
+    {
+      tmpNormals[i] = vec3.fromValues(0, 0, 0);
+    }
 
     for (let i = 0; i < indices.length; i += 3) {
       const p1 = vertices[indices[i]];
@@ -57,9 +59,12 @@ export class UnitCube {
       const vec2 = vec3.subtract(vec3.create(), p3, p2);
       const n = vec3.cross(vec3.create(), vec1, vec2);
 
-      for (let ii = 0; ii < 3; ++ii)
-      {
-        tmpNormals[indices[i + ii]] = vec3.add(vec3.create(), tmpNormals[indices[i + ii]], n);
+      for (let ii = 0; ii < 3; ++ii) {
+        //this one sets all values in tmpNormals to zeros
+        vec3.add(tmpNormals[indices[i + ii]], tmpNormals[indices[i + ii]], n);
+
+        // unless I do:
+        //tmpNormals[indices[i + ii]] = vec3.add(vec3.create(), tmpNormals[indices[i + ii]], n);
       }
     }
 

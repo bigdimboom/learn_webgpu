@@ -80,8 +80,13 @@ export default defineConfig({
 2. load texture resource from a worker thread
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/textured_quad.jpg "Chapter 2")
 
-## Chapter 2: Uniform
+## Chapter 3: Uniform
 1. Single Uniform Buffer (2 matrices: mvp and modelview)
 2. Configure BindGroup: (with single buffer, the data alignment must be 256, for each bind point within a group) 
 3. Configure BindGroup V2: (Or One just use one bind point within a group, and decleare a struct with many fields for Uniform the sahder)  
-![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/spin_cube.gif "Chapter 2")
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/spin_cube.gif "Chapter 3")
+
+## Chapter 4: Free-Look Camera
+1. W S A D for movement
+2. Click mouse cursor on teh canvas to activate pith and yaw
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/freelookcam.gif "Chapter 4")

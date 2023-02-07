@@ -1,7 +1,9 @@
 import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
 import { glMatrix, mat4, vec3, vec4 } from "gl-matrix";
-import shaderSource from "./CubeShader.wgsl?raw";
+import shaderSource from "./Shader.wgsl?raw";
 import { UnitCube } from "../utils/Primitives";
+import { FreeLookCam } from "./FreeLookCam";
+import { OnKeyPress, UserInput } from "./UserInput";
 
 interface RenderData {
   cube: UnitCube;
@@ -14,7 +16,6 @@ interface RenderData {
 }
 
 const MatrixSize = mat4.create().length * 4;
-const UBO_OFFSET = 256; // VERY IMPORTANT !!!
 
 async function initData(ctx: WGPUContext): Promise<RenderData> {
   // cube data
@@ -24,7 +25,8 @@ async function initData(ctx: WGPUContext): Promise<RenderData> {
 
   // allocate ubo
   const ubo = ctx.device.createBuffer({
-    size: UBO_OFFSET * 2, // MVP, modelview
+    //size: UBO_OFFSET * 2, // MVP, modelview
+    size: MatrixSize * 2, // MVP, modelview
     usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     label: "UBO for MVP",
   });
@@ -75,18 +77,7 @@ async function initData(ctx: WGPUContext): Promise<RenderData> {
         binding: 0,
         resource: {
           buffer: ubo,
-          offset: 0,
-          size: MatrixSize,
           label: "mvp matrix",
-        },
-      },
-      {
-        binding: 1,
-        resource: {
-          buffer: ubo,
-          offset: UBO_OFFSET, // VERY IMPORTANT !!!
-          size: MatrixSize,
-          label: "model view matrix",
         },
       },
     ],
@@ -118,7 +109,7 @@ async function draw(ctx: WGPUContext, data: RenderData) {
     ctx.device.queue.writeBuffer(data.ubo, 0, data.mvp as Float32Array);
     ctx.device.queue.writeBuffer(
       data.ubo,
-      UBO_OFFSET, // VERY IMPORTANT !!!
+      MatrixSize,
       data.modelview as Float32Array
     );
   }
@@ -170,33 +161,52 @@ export async function Run(canvas: HTMLCanvasElement) {
     throw new Error("must use canvas size");
   }
 
-  const asp: number = ctx.size.width / ctx.size.height;
-  const proj = mat4.perspective(
-    mat4.create(),
-    glMatrix.toRadian(65),
-    asp,
-    0.01,
-    500
-  );
 
-  const view = mat4.lookAt(
-    mat4.create(),
-    vec3.fromValues(0, 2, 5),
-    vec3.fromValues(0, 0, 0),
-    vec3.fromValues(0, 1, 0)
-  );
-
+  const camera = new FreeLookCam();
+  camera.FromLookAt(vec3.fromValues(0, 2, 5), vec3.fromValues(0, 0, 0));
   const model = mat4.identity(mat4.create());
-
   rData.mvp = mat4.create();
   rData.modelview = mat4.create();
+
+  const input = new UserInput();
+  input.RegisterOnKeyPressEvent(
+    (event) => {
+      if (!event) throw new Error("event is null");
+      //console.log(`Key pressed: ${event.key}`);
+
+      if (event.key === "w") {
+        camera.MoveForward(0.1);
+      } else if (event.key === "s") {
+        camera.MoveForward(-0.1);
+      } else if (event.key === "a") {
+        camera.MoveRight(-0.1);
+      } else if (event.key === "d") {
+        camera.MoveRight(0.1);
+      }
+
+      camera.Update();
+    }
+  );
+
+  canvas.style.cursor = "crosshair";
+  const originalCursor = canvas.style.cursor;
+
+  input.RegisterMouseEvents(
+    (ev) => {
+      canvas.style.cursor = "none";
+      camera.Yaw(glMatrix.toRadian(-ev.delta[0]));
+      camera.Pitch(glMatrix.toRadian(-ev.delta[1]));
+      camera.Update();
+    },
+    () => (canvas.style.cursor = originalCursor)
+  );
 
   function render() {
     if (!rData.mvp || !rData.modelview) return;
 
     mat4.rotateY(model, model, glMatrix.toRadian(1));
-    mat4.multiply(rData.modelview, view, model);
-    mat4.multiply(rData.mvp, proj, rData.modelview);
+    mat4.mul(rData.modelview, camera.view, model);
+    mat4.mul(rData.mvp, camera.proj, rData.modelview);
 
     draw(ctx, rData);
     requestAnimationFrame(render);

@@ -1,7 +1,7 @@
 import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
 import { glMatrix, mat4, vec3, vec4 } from "gl-matrix";
 import shaderSource from "./CubeShaderV2.wgsl?raw";
-import { UnitCube } from "./Primitives";
+import { UnitCube } from "../utils/Primitives";
 
 interface RenderData {
   cube: UnitCube;
