@@ -5,6 +5,7 @@ export interface CameraInternal
 {
     view : mat4;
     proj: mat4;
+    GetBytes() : number;
 }
 
 export class FreeLookCam implements CameraInternal
@@ -31,6 +32,11 @@ export class FreeLookCam implements CameraInternal
         this._right = vec3.cross(vec3.create(), this._dir, this._up);
 
         this._pitchRad = 0;
+    }
+
+    GetBytes(): number 
+    {
+        return (this.view as Float32Array).byteLength + (this.proj as Float32Array).byteLength;
     }
 
     FromLookAt(eye: vec3, center: vec3, up: vec3 = vec3.fromValues(0,1,0)) : FreeLookCam

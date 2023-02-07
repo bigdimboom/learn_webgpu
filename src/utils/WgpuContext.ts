@@ -5,6 +5,7 @@ export interface Size {
 
 export interface WGPUContext {
   device: GPUDevice;
+  adapter: GPUAdapter;
   canvasCtx: GPUCanvasContext;
   format: GPUTextureFormat;
   size?: Size;
@@ -36,5 +37,5 @@ export async function initWebGPU(
     // prevent chrome warning
     alphaMode: "opaque",
   });
-  return { device, canvasCtx, format, size };
+  return { device, adapter, canvasCtx, format, size };
 }
