@@ -2,12 +2,12 @@ export interface OnMouseEvent {
   lastCoord: [X: number, Y: number];
   currCoord: [X: number, Y: number];
   delta: [X: number, Y: number];
+  hasBtnDown: boolean;
   event?: MouseEvent;
 }
 
 interface MouseStates {
   onMouseEv : OnMouseEvent, // my custom event
-  isBtnDown: boolean;
   Update: (builtinMouseEvent: MouseEvent) => void;
 }
 
@@ -22,9 +22,8 @@ export class UserInput {
         lastCoord: [0, 0],
         currCoord: [0, 0],
         delta: [0, 0],
+        hasBtnDown : false
       },
-
-      isBtnDown: false,
 
       Update: (ev: MouseEvent) => {
         this.mouse.onMouseEv.lastCoord[0] = this.mouse.onMouseEv.currCoord[0];
@@ -52,28 +51,33 @@ export class UserInput {
   }
 
   RegisterMouseEvents(
-    MouseBtnDownCallback: (ev: OnMouseEvent) => void,
-    MouseBtnReleaseCallback?: (ev: OnMouseEvent) => void
+    OnBtnDownCallback?: ((ev: OnMouseEvent) => void) | undefined,
+    OnBtnReleaseCallback?: ((ev: OnMouseEvent) => void) | undefined,
+    OnMouseMove?: ((ev: OnMouseEvent) => void) | undefined
   ) {
     window.addEventListener("mousedown", (downEvent: MouseEvent) => {
-      this.mouse.isBtnDown = true;
+      this.mouse.onMouseEv.hasBtnDown = true;
       this.mouse.Update(downEvent);
+      
+      if (OnBtnDownCallback !== undefined) {
+        OnBtnDownCallback(this.mouse.onMouseEv);
+      }
     });
 
     window.addEventListener("mouseup", (upEvent: MouseEvent) => {
-      this.mouse.isBtnDown = false;
+      this.mouse.onMouseEv.hasBtnDown = false;
       this.mouse.Update(upEvent);
 
-      if (MouseBtnReleaseCallback !== undefined) {
-        MouseBtnReleaseCallback(this.mouse.onMouseEv);
+      if (OnBtnReleaseCallback !== undefined) {
+        OnBtnReleaseCallback(this.mouse.onMouseEv);
       }
     });
 
     window.addEventListener("mousemove", (moveEvent: MouseEvent) => {
       this.mouse.Update(moveEvent);
 
-      if (this.mouse.isBtnDown && MouseBtnDownCallback !== undefined) {
-        MouseBtnDownCallback(this.mouse.onMouseEv);
+      if (OnMouseMove !== undefined) {
+        OnMouseMove(this.mouse.onMouseEv);
       }
     });
   }

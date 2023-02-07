@@ -1,9 +1,11 @@
 import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
 import { glMatrix, mat4, vec3, vec4 } from "gl-matrix";
 import shaderSource from "./Shader.wgsl?raw";
+
 import { UnitCube } from "../utils/Primitives";
-import { FreeLookCam } from "./FreeLookCam";
-import { OnKeyPress, UserInput } from "./UserInput";
+import { FreeLookCam } from "../utils/FreeLookCam";
+import { UserInput } from "../utils/UserInput";
+import { BindFreeLookCamWithInput } from "../utils/Common";
 
 interface RenderData {
   cube: UnitCube;
@@ -161,45 +163,15 @@ export async function Run(canvas: HTMLCanvasElement) {
     throw new Error("must use canvas size");
   }
 
-
+  const input = new UserInput();
   const camera = new FreeLookCam();
+  BindFreeLookCamWithInput(camera, input, canvas);
+
   camera.FromLookAt(vec3.fromValues(0, 2, 5), vec3.fromValues(0, 0, 0));
+
   const model = mat4.identity(mat4.create());
   rData.mvp = mat4.create();
   rData.modelview = mat4.create();
-
-  const input = new UserInput();
-  input.RegisterOnKeyPressEvent(
-    (event) => {
-      if (!event) throw new Error("event is null");
-      //console.log(`Key pressed: ${event.key}`);
-
-      if (event.key === "w") {
-        camera.MoveForward(0.1);
-      } else if (event.key === "s") {
-        camera.MoveForward(-0.1);
-      } else if (event.key === "a") {
-        camera.MoveRight(-0.1);
-      } else if (event.key === "d") {
-        camera.MoveRight(0.1);
-      }
-
-      camera.Update();
-    }
-  );
-
-  canvas.style.cursor = "crosshair";
-  const originalCursor = canvas.style.cursor;
-
-  input.RegisterMouseEvents(
-    (ev) => {
-      canvas.style.cursor = "none";
-      camera.Yaw(glMatrix.toRadian(-ev.delta[0]));
-      camera.Pitch(glMatrix.toRadian(-ev.delta[1]));
-      camera.Update();
-    },
-    () => (canvas.style.cursor = originalCursor)
-  );
 
   function render() {
     if (!rData.mvp || !rData.modelview) return;
