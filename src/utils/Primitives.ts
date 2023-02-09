@@ -2,7 +2,7 @@ import { initWebGPU } from "./WgpuContext";
 import { vec3 } from "gl-matrix";
 
 
-export enum PrimitiveKind
+export enum PrimitiveMode
 {
   Fill = 0,
   WireFrame
@@ -16,7 +16,7 @@ export class UnitCube {
   vbo: GPUBuffer | null = null;
   ibo: GPUBuffer | null = null;
 
-  public constructor(scale: number = 1.0, kind = PrimitiveKind.Fill) {
+  public constructor(scale: number = 1.0, kind = PrimitiveMode.Fill) {
     const vertices: vec3[] = [
       // Front face
       vec3.fromValues(-1.0, 1.0, 1.0), // 0
@@ -32,7 +32,7 @@ export class UnitCube {
     ];
 
     let indices : Uint16Array;
-    if(kind == PrimitiveKind.Fill)
+    if(kind == PrimitiveMode.Fill)
     {
       indices = new Uint16Array([
         // Front face

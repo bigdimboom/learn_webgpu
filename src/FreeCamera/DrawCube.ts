@@ -2,7 +2,7 @@ import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
 import { glMatrix, mat4, vec3, vec4 } from "gl-matrix";
 import shaderSource from "./Shader.wgsl?raw";
 
-import { PrimitiveKind, UnitCube } from "../utils/Primitives";
+import { UnitCube } from "../utils/Primitives";
 import { FreeLookCam } from "../utils/FreeLookCam";
 import { UserInput } from "../utils/UserInput";
 import { BindFreeLookCamWithInput } from "../utils/Common";

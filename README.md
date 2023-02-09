@@ -101,3 +101,8 @@ export default defineConfig({
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/instancing.gif "Chapter 5")
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/instancing_bench.jpg "Chapter 5")
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/instancing_bench2.jpg "Chapter 5")
+
+## Chapter 6: BundleDraw
+1. Use Free-Look camera
+2. ReactJs for UI
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/bundle_draw.gif "Chapter 6")
