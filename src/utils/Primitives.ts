@@ -1,6 +1,13 @@
 import { initWebGPU } from "./WgpuContext";
 import { vec3 } from "gl-matrix";
 
+
+export enum PrimitiveKind
+{
+  Fill = 0,
+  WireFrame
+}
+
 export class UnitCube {
   vertices: Float32Array;
   normals: Float32Array;
@@ -9,40 +16,57 @@ export class UnitCube {
   vbo: GPUBuffer | null = null;
   ibo: GPUBuffer | null = null;
 
-  public constructor(scale: number = 1.0) {
+  public constructor(scale: number = 1.0, kind = PrimitiveKind.Fill) {
     const vertices: vec3[] = [
       // Front face
-      vec3.fromValues(-1.0, 1.0, 1.0),
-      vec3.fromValues(1.0, 1.0, 1.0),
-      vec3.fromValues(-1.0, -1.0, 1.0),
-      vec3.fromValues(1.0, -1.0, 1.0),
+      vec3.fromValues(-1.0, 1.0, 1.0), // 0
+      vec3.fromValues(-1.0, -1.0, 1.0), // 1
+      vec3.fromValues(1.0, -1.0, 1.0), // 2
+      vec3.fromValues(1.0, 1.0, 1.0), //3
 
       // Back face
-      vec3.fromValues(-1.0, 1.0, -1.0),
-      vec3.fromValues(1.0, 1.0, -1.0),
-      vec3.fromValues(-1.0, -1.0, -1.0),
-      vec3.fromValues(1.0, -1.0, -1.0),
+      vec3.fromValues(-1.0, 1.0, -1.0), // 4
+      vec3.fromValues(1.0, 1.0, -1.0), // 5
+      vec3.fromValues(1.0, -1.0, -1.0), // 6
+      vec3.fromValues(-1.0, -1.0, -1.0), // 1
     ];
 
-    const indices = new Uint16Array([
-      // Front face
-      0, 1, 2, 2, 1, 3,
+    let indices : Uint16Array;
+    if(kind == PrimitiveKind.Fill)
+    {
+      indices = new Uint16Array([
+        // Front face
+        0, 1, 2, 0, 2, 3, // 
+  
+        // Right face
+        3, 2, 6, 3, 6, 5, // 
+  
+        // Back face
+        4, 5, 6, 4, 6, 7, //
+  
+        // Left face
+        4, 7, 1, 4, 1, 0, //
+  
+        // Top face
+        4, 0, 3, 4, 3, 5, //
+  
+        // Bottom face
+        7, 6, 2, 7, 2, 1 //
+      ]);
+    }
+    else
+    {
+      indices = new Uint16Array([
+        // Front face
+        0, 1, 1, 2, 2, 3, 3, 0,
+  
+        // Back face
+        4, 5, 5, 6, 6, 7, 7, 4,
 
-      // Right face
-      1, 5, 3, 3, 5, 7,
-
-      // Back face
-      5, 4, 7, 7, 4, 6,
-
-      // Left face
-      4, 0, 6, 6, 0, 2,
-
-      // Top face
-      4, 5, 0, 0, 5, 1,
-
-      // Bottom face
-      2, 3, 6, 6, 3, 7,
-    ]);
+        // the rest
+        0, 4, 3, 5, 1, 7, 2, 6
+      ]);
+    }
 
     const tmpNormals = new Array<vec3>(vertices.length);
     for (let i = 0; i < tmpNormals.length; ++i) 

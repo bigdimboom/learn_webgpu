@@ -77,7 +77,7 @@ async function initData(ctx: WGPUContext) : Promise<RenderData>
     },
     primitive: {
       topology: "triangle-list",
-      cullMode: "front",
+      cullMode: "back",
       frontFace: "ccw",
     },
     label: "render pipeline",

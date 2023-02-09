@@ -1,7 +1,7 @@
 import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
 import { glMatrix, mat4, vec3, vec4 } from "gl-matrix";
 import shaderSource from "./CubeShader.wgsl?raw";
-import { UnitCube } from "../utils/Primitives";
+import { PrimitiveKind, UnitCube } from "../utils/Primitives";
 
 interface RenderData {
   cube: UnitCube;
@@ -62,7 +62,7 @@ async function initData(ctx: WGPUContext): Promise<RenderData> {
     },
     primitive: {
       topology: "triangle-list",
-      cullMode: "front",
+      cullMode: "back",
       frontFace: "ccw",
     },
     label: "render pipeline",
