@@ -1,7 +1,7 @@
 import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
 import { glMatrix, mat4, vec3, vec4 } from "gl-matrix";
 import shaderSource from "./CubeShader.wgsl?raw";
-import { PrimitiveKind, UnitCube } from "../utils/Primitives";
+import { UnitCube } from "../utils/Primitives";
 
 interface RenderData {
   cube: UnitCube;
@@ -141,20 +141,22 @@ async function draw(ctx: WGPUContext, data: RenderData) {
     },
   });
 
+  if(!data.cube.ibo || !data.cube.vbo) throw new Error("Bad Data");
+
   renderPass.setPipeline(data.pipeline);
   renderPass.setVertexBuffer(
     0,
-    data.cube.GetVBO(),
+    data.cube.vbo,
     0,
     data.cube.vertices.byteLength
   );
   renderPass.setVertexBuffer(
     1,
-    data.cube.GetVBO(),
+    data.cube.vbo,
     data.cube.vertices.byteLength,
     data.cube.normals.byteLength
   );
-  renderPass.setIndexBuffer(data.cube.GetIBO(), "uint16");
+  renderPass.setIndexBuffer(data.cube.ibo, "uint16");
   renderPass.setBindGroup(0, data.bindGroup);
   renderPass.drawIndexed(data.cube.indices.length);
   renderPass.end();

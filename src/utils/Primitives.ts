@@ -13,7 +13,16 @@ export interface PrimitiveData {
   indices?: Uint16Array;
 }
 
-export class UnitCube implements PrimitiveData {
+export interface RenderBufferData 
+{
+  vbo: GPUBuffer | null;
+  ibo: GPUBuffer | null;
+  ComputeVBO(device: GPUDevice): GPUBuffer;
+  ComputeIBO(device: GPUDevice): GPUBuffer;
+}
+
+
+export class UnitCube implements PrimitiveData, RenderBufferData{
   vertices: Float32Array;
   normals: Float32Array;
   indices: Uint16Array;
@@ -131,6 +140,7 @@ export class UnitCube implements PrimitiveData {
     this.normals = new Float32Array(tmpNormals.map((a) => [...a]).flat());
     // assign indices
     this.indices = indices;
+
   }
 
   public ComputeVBO(device: GPUDevice): GPUBuffer {
@@ -159,23 +169,9 @@ export class UnitCube implements PrimitiveData {
     this.ibo = ibo;
     return ibo;
   }
-
-  public GetVBO(): GPUBuffer {
-    if (!this.vbo) {
-      throw new Error("vbo is null");
-    }
-    return this.vbo;
-  }
-
-  public GetIBO(): GPUBuffer {
-    if (!this.ibo) {
-      throw new Error("ibo is null");
-    }
-    return this.ibo;
-  }
 }
 
-export class UnitPlane implements PrimitiveData {
+export class UnitPlane implements PrimitiveData, RenderBufferData{
   vertices: Float32Array;
   normals: Float32Array;
   texCoord: Float32Array;
@@ -199,6 +195,8 @@ export class UnitPlane implements PrimitiveData {
       0,
       -scale,
     ]);
+    
+    this.normals = new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]);
 
     this.texCoord = new Float32Array([0, 0, 0, 1, 1, 1, 1, 0]);
 
@@ -207,8 +205,6 @@ export class UnitPlane implements PrimitiveData {
     } else {
       this.indices = new Uint16Array([0, 1, 1, 2, 2, 3, 3, 0]);
     }
-
-    this.normals = new Float32Array([0, 1, 0, 0, 1, 0, 0, 1, 0, 0, 1, 0]);
   }
 
   public ComputeVBO(device: GPUDevice): GPUBuffer {
@@ -237,7 +233,7 @@ export class UnitPlane implements PrimitiveData {
     const ibo = device.createBuffer({
       size: this.indices.byteLength,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
-      label: "Vertex Buffer(pos, normal)",
+      label: "index buffer",
     });
 
     device.queue.writeBuffer(ibo, 0, this.indices);
@@ -245,23 +241,9 @@ export class UnitPlane implements PrimitiveData {
     this.ibo = ibo;
     return ibo;
   }
-
-  public GetVBO(): GPUBuffer {
-    if (!this.vbo) {
-      throw new Error("vbo is null");
-    }
-    return this.vbo;
-  }
-
-  public GetIBO(): GPUBuffer {
-    if (!this.ibo) {
-      throw new Error("ibo is null");
-    }
-    return this.ibo;
-  }
 }
 
-export class UnitBox implements PrimitiveData
+export class UnitBox implements PrimitiveData, RenderBufferData
 {
   vertices: Float32Array;
   indices: Uint16Array;
@@ -269,7 +251,7 @@ export class UnitBox implements PrimitiveData
   vbo: GPUBuffer | null = null;
   ibo: GPUBuffer | null = null;
 
-  constructor(scale: 1.0)
+  constructor(scale = 1)
   {
     this.vertices = new Float32Array([
       // float3 position, float3 normal, float2 uv
@@ -342,7 +324,7 @@ export class UnitBox implements PrimitiveData
   }
 }
 
-class Sphere implements PrimitiveData
+export class Sphere implements PrimitiveData, RenderBufferData
 {
   vertices: Float32Array;
   indices: Uint16Array;

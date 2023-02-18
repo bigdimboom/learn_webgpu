@@ -107,10 +107,13 @@ async function initData(ctx: WGPUContext): Promise<RenderData> {
       depthStencilFormat: "depth24plus",
       label: "filled cube draw bundle"
     });
+
+    if(!cube.ibo || !cube.vbo) throw new Error("Bad Data");
+
     bundleEncoder.setPipeline(pipeline);
-    bundleEncoder.setVertexBuffer(0, cube.GetVBO(),0,cube.vertices.byteLength);
-    bundleEncoder.setVertexBuffer(1,cube.GetVBO(), cube.vertices.byteLength, cube.normals.byteLength);
-    bundleEncoder.setIndexBuffer(cube.GetIBO(), "uint16");
+    bundleEncoder.setVertexBuffer(0, cube.vbo, 0,cube.vertices.byteLength);
+    bundleEncoder.setVertexBuffer(1,cube.vbo, cube.vertices.byteLength, cube.normals.byteLength);
+    bundleEncoder.setIndexBuffer(cube.ibo, "uint16");
     bundleEncoder.setBindGroup(0, bindGroup);
     bundleEncoder.drawIndexed(cube.indices.length);
     return bundleEncoder.finish();
