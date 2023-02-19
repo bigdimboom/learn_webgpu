@@ -10,7 +10,7 @@ export default function App() {
     }
 
     Run(canvasRef.current);
-  }, []);
+  },[]);
 
   return (
     <>

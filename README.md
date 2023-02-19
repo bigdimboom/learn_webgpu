@@ -106,3 +106,7 @@ export default defineConfig({
 1. Use Free-Look camera
 2. ReactJs for UI
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/bundle_draw.gif "Chapter 6")
+
+## Chapter 7: Offscreen
+Offscreen is the basics of a lot special effects, e.g. shadow map, deferred rendering
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/offscreen.gif "Chapter 7")

@@ -328,6 +328,7 @@ async function InitMainData(ctx: WGPUContext, bitmap: ImageBitmap, ofsData : Off
   return result;
 }
 
+
 function DrawFrame(
   ctx: WGPUContext,
   ofsData: OffScreenRenderData,
