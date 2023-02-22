@@ -14,7 +14,7 @@
   2. for other browsers: npm install -g react-devtools, and then run "react-devtools" to activate the tool
 2. React Docs: https://beta.reactjs.org/
 
-```VS Code Launch Script
+```json VSCode launch Script
 {
     // Use IntelliSense to learn about possible attributes.
     // Hover to view descriptions of existing attributes.
