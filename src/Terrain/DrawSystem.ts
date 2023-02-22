@@ -1,11 +1,21 @@
+import { BindFreeLookCamWithInput } from "../utils/Common";
+import { FreeLookCam } from "../utils/FreeLookCam";
+import { UserInput } from "../utils/UserInput";
 import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
+import { DrawUtil } from "./DrawUtil";
 
 export abstract class DrawSystem {
   ctx: WGPUContext | undefined;
   lastTS : number = 0;
   deltaTS : number = 0;
+  input : UserInput;
+  camera: FreeLookCam;
+  drawUtil : DrawUtil | undefined;
 
   constructor(public canvas: HTMLCanvasElement) {
+    this.input = new UserInput();
+    this.camera = new FreeLookCam();
+    BindFreeLookCamWithInput(this.camera, this.input, canvas);
     this.Run();
   }
 
@@ -15,6 +25,7 @@ export abstract class DrawSystem {
 
   private async Run() {
     this.ctx = await initWebGPU(this.canvas);
+    this.drawUtil = new DrawUtil(this.ctx);
 
     if (!this.ctx.device) {
       throw new Error("WebGPU Context Init Failed");

@@ -32,14 +32,14 @@ export class RenderPipelineBuilder {
   }
 
   SetFragState(
-    target: DefaultRenderTarget,
+    format : GPUTextureFormat,
     fsCode: string,
     entryPoint: string = PipelineConstant.FS_ENTRY_POINT,
     blendState?: GPUBlendState
   ): RenderPipelineBuilder {
     this.fragment = {
       entryPoint: entryPoint,
-      targets: [{ format: target.colorAttachment.format, blend: blendState }],
+      targets: [{ format: format, blend: blendState }],
       module: this.ctx.device.createShaderModule({
         code: fsCode,
         label: "frag shader",
@@ -49,14 +49,12 @@ export class RenderPipelineBuilder {
   }
 
   SetDepthStencil(
-    renderTarget: DefaultRenderTarget,
+    depthFormat: GPUTextureFormat,
     depthCompare: GPUCompareFunction = "less"
   ): RenderPipelineBuilder {
-    if (!renderTarget.depthStencil) {
-      throw new Error("mo depth configured in render target");
-    }
+
     this.depth = {
-      format: renderTarget.depthStencil?.format,
+      format: depthFormat,
       depthCompare: depthCompare,
       depthWriteEnabled: true,
     };

@@ -19,53 +19,97 @@ export enum GeomConstant {
   VERTEX_SIZE = (3 + 3 + 2) * 4
 }
 
-export class ParametricSphere {
-  vertices: Float32Array; // x_y_z, nx_ny_nz, u_v
-  indices: Uint32Array;
-  radius: number;
-  center: vec3;
-  nVertices: number;
-
-  vbo: GPUBuffer | undefined;
-  ibo: GPUBuffer | undefined;
-  ubo: GPUBuffer | undefined;
-  uboOffset: number = 0;
+export class Geometry
+{
+  vertices: Float32Array;
+  indices: Uint16Array;
 
   mvp: MVP;
 
-  constructor(radius: number, center: vec3, nVerts: number) {
-    this.nVertices = nVerts;
-    this.center = center;
-    this.radius = radius;
+  vbo: GPUBuffer | null = null;
+  ibo: GPUBuffer | null = null;
+  ubo: GPUBuffer | null = null;
 
-    const data = ParametricSphere.GenerateSphere(radius, center, nVerts);
-    this.vertices = ParametricSphere.VerticesToFloat32Array(data.vertices);
-    this.indices = new Uint32Array(data.indices);
+  uboOffset: number = 0;
 
+  constructor(scale = 1)
+  {
+    this.vertices = new Float32Array([
+      // float3 position, float3 normal, float2 uv
+      scale,scale,scale,    1,0,0,      0,1,
+      scale,scale,-scale,   1,0,0,      1,1,
+      scale,-scale,scale,   1,0,0,      0,0,
+      scale,-scale,-scale,  1,0,0,      1,0,
+      -scale,scale,-scale,  -1,0,0,     0,1,
+      -scale,scale,scale,   -1,0,0,     1,1,
+      -scale,-scale,-scale, -1,0,0,     0,0,
+      -scale,-scale,scale,  -1,0,0,     1,0,
+      -scale,scale,-scale,  0,1,0,      0,1,
+      scale,scale,-scale,   0,1,0,      1,1,
+      -scale,scale,scale,   0,1,0,      0,0,
+      scale,scale,scale,    0,1,0,      1,0,
+      -scale,-scale,scale,  0,-1,0,     0,1,
+      scale,-scale,scale,   0,-1,0,     1,1,
+      -scale,-scale,-scale, 0,-1,0,     0,0,
+      scale,-scale,-scale,  0,-1,0,     1,0,
+      -scale,scale,scale,   0,0,1,      0,1,
+      scale,scale,scale,    0,0,1,      1,1,
+      -scale,-scale,scale,  0,0,1,      0,0,
+      scale,-scale,scale,   0,0,1,      1,0,
+      scale,scale,-scale,   0,0,-1,     0,1,
+      -scale,scale,-scale,  0,0,-1,     1,1,
+      scale,-scale,-scale,  0,0,-1,     0,0,
+      -scale,-scale,-scale, 0,0,-1,     1,0
+    ]);
+
+  this.indices = new Uint16Array([
+      0,2,1,
+      2,3,1,
+      4,6,5,
+      6,7,5,
+      8,10,9,
+      10,11,9,
+      12,14,13,
+      14,15,13,
+      16,18,17,
+      18,19,17,
+      20,22,21,
+      22,23,21
+    ]);
+
+    
     this.mvp = {
-        modelView : mat4.create(),
-        modelViewInv: mat4.create(),
-        proj: mat4.create(),
-        projInv : mat4.create()
-    }
+      modelView : mat4.create(),
+      modelViewInv: mat4.create(),
+      proj: mat4.create(),
+      projInv : mat4.create()
+  }
   }
 
-  GenerateVBO(device: GPUDevice) {
-    this.vbo = device.createBuffer({
+
+  public GenerateVBO(device: GPUDevice): GPUBuffer {
+    const vbo = device.createBuffer({
       size: this.vertices.byteLength,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
-      label: "P Sphere Vertex Buffer(pos, normal, uv)",
+      label: "Vertex Buffer(pos, normal, uv)",
     });
-    return this.vbo;
+
+    device.queue.writeBuffer(vbo, 0, this.vertices);
+    this.vbo = vbo;
+    return vbo;
   }
 
-  GenerateIBO(device: GPUDevice) {
-    this.ibo = device.createBuffer({
+  public GenerateIBO(device: GPUDevice): GPUBuffer {
+    const ibo = device.createBuffer({
       size: this.indices.byteLength,
       usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.INDEX,
-      label: "P Sphere Index Buffer",
+      label: "Index Element Buffer",
     });
-    return this.ibo;
+
+    device.queue.writeBuffer(ibo, 0, this.indices);
+
+    this.ibo = ibo;
+    return ibo;
   }
 
   GenerateUBO(device: GPUDevice) {
@@ -82,7 +126,7 @@ export class ParametricSphere {
     this.uboOffset = offset;
   }
 
-  GetVertexAttributeLayout(): GPUVertexBufferLayout[] {
+  GetVertexAttributeLayouts(): GPUVertexBufferLayout[] {
     return [
       {
         arrayStride: GeomConstant.VERTEX_SIZE,
@@ -104,17 +148,17 @@ export class ParametricSphere {
     this.mvp.proj = proj;
     mat4.invert(this.mvp.projInv, this.mvp.proj);
 
-    let dataOffset = 0;
-    device.queue.writeBuffer(this.ubo, this.uboOffset + dataOffset, this.mvp.modelView as Float32Array);
+    let dataOffset = this.uboOffset;
+    device.queue.writeBuffer(this.ubo, dataOffset, this.mvp.modelView as Float32Array);
     
     dataOffset += GeomConstant.MAT4_SIZE;
-    device.queue.writeBuffer(this.ubo, this.uboOffset + dataOffset, this.mvp.proj as Float32Array);
+    device.queue.writeBuffer(this.ubo, dataOffset, this.mvp.proj as Float32Array);
     
     dataOffset += GeomConstant.MAT4_SIZE;
-    device.queue.writeBuffer(this.ubo, this.uboOffset + dataOffset, this.mvp.modelViewInv as Float32Array);
+    device.queue.writeBuffer(this.ubo, dataOffset, this.mvp.modelViewInv as Float32Array);
     
     dataOffset += GeomConstant.MAT4_SIZE;
-    device.queue.writeBuffer(this.ubo, this.uboOffset + dataOffset, this.mvp.projInv as Float32Array);
+    device.queue.writeBuffer(this.ubo, dataOffset, this.mvp.projInv as Float32Array);
   }
 
   static VerticesToFloat32Array(vertices: Vertex[]): Float32Array {
@@ -128,58 +172,6 @@ export class ParametricSphere {
 
     return new Float32Array(floats);
   }
-
-  static GenerateSphere(
-    radius: number,
-    centerLocation: vec3,
-    numVertices: number
-  ): { vertices: Vertex[]; indices: number[] } {
-    const vertices: Vertex[] = [];
-    const indices: number[] = [];
-
-    for (let i = 0; i < numVertices; i++) {
-      const theta = (i / (numVertices - 1)) * Math.PI; // angle around y-axis
-      const phi =
-        ((i + 1) % 2 ? i / numVertices : i / numVertices - 1) * Math.PI; // angle around z-axis
-
-      const x = radius * Math.sin(theta) * Math.cos(phi);
-      const y = radius * Math.cos(theta);
-      const z = radius * Math.sin(theta) * Math.sin(phi);
-
-      const position: vec3 = vec3.fromValues(x, y, z);
-      vec3.add(position, position, centerLocation);
-
-      const normal: vec3 = vec3.clone(position);
-      vec3.normalize(normal, normal);
-
-      const texCoord: vec2 = vec2.fromValues(
-        phi / (2 * Math.PI),
-        theta / Math.PI
-      );
-
-      vertices.push({ position, normal, texCoord });
-    }
-
-    // generate indices
-    for (let i = 0; i < numVertices; i++) {
-      for (let j = 0; j < numVertices; j++) {
-        const i1 = i;
-        const j1 = j;
-        const i2 = (i + 1) % numVertices;
-        const j2 = j;
-        const i3 = (i + 1) % numVertices;
-        const j3 = (j + 1) % numVertices;
-
-        indices.push(i1 * numVertices + j1);
-        indices.push(i2 * numVertices + j2);
-        indices.push(i3 * numVertices + j3);
-
-        indices.push(i3 * numVertices + j3);
-        indices.push(i2 * numVertices + j2);
-        indices.push(i1 * numVertices + j1);
-      }
-    }
-
-    return { vertices, indices };
-  }
 }
+
+export class UnitBox extends Geometry {}
