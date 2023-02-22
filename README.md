@@ -14,35 +14,24 @@
   2. for other browsers: npm install -g react-devtools, and then run "react-devtools" to activate the tool
 2. React Docs: https://beta.reactjs.org/
 
-```javascript Vite Config
-// vite config
-import { defineConfig } from 'vite'
-import react from '@vitejs/plugin-react-swc'
-
-const devToken = "Get Token From https://developer.chrome.com/origintrials"
-
-// https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [
-    react(),
-    {
-      name: 'Origin-Trial',
-      configureServer: server => {
-          server.middlewares.use((_req, res, next) => {
-              res.setHeader("Origin-Trial", devToken)
-              next()
-          })
-      }
-  }
-  ],
-  server:{
-    host: 'localhost',
-    port: 3000
-  }
-})
-```
-
-![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/3.png "When Creating Token...")
+```VS Code Launch Script
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Chrome against localhost",
+            "url": "http://localhost:3000",
+            "webRoot": "${workspaceFolder}",
+            "runtimeArgs": ["--enable-unsafe-webgpu"]
+        }
+    ]
+}
+Env Update: Chrome 110, Windows, WebGPU on Linux has bugs
 
 ```json Typescript Config
 // tsc config 
