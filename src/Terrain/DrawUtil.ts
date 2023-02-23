@@ -43,4 +43,15 @@ export class DrawUtil {
       colorAttachment: this.ctx.canvasCtx.getCurrentTexture(),
     };
   }
+
+  GetWidth() : number
+  {
+    return this.ctx.canvasCtx.getCurrentTexture().width;
+  }
+
+  GetHeight() : number
+  {
+    return this.ctx.canvasCtx.getCurrentTexture().height;
+  }
+
 }

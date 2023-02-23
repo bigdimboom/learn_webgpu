@@ -41,8 +41,13 @@ export class Texture2D {
     obj.sampler = device.createSampler({
       label: "Texture 2D Sampler",
     });
+
+    device.queue.copyExternalImageToTexture(
+      { source: bitmap },
+      { texture: obj.texture },
+      [bitmap.width, bitmap.height, 1]
+    );
+
+    return obj;
   }
-
-  
-
 }
