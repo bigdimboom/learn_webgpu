@@ -53,5 +53,5 @@ export class DrawUtil {
   {
     return this.ctx.canvasCtx.getCurrentTexture().height;
   }
-
+  
 }

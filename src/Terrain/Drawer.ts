@@ -3,12 +3,15 @@ import { glMatrix, vec2, vec3, vec4, mat3, mat4 } from "gl-matrix";
 import { UnitBox, Sphere, Geometry } from "./Geometry";
 import { RenderPipelineBuilder } from "./RenderPipelineBuilder";
 import { WGPUContext } from "../utils/WgpuContext";
-import shaderSrc from "./Shader.wgsl?raw";
-import textureDebugShaderSrc from "./TextureDebugShader.wgsl?raw";
 import { DefaultRenderTarget } from "./DrawUtil";
 
 import textureUrl from "../assets/texture.png?url";
 import { Texture2D, TextureConstant } from "./Texture";
+import { ComputePipelineBuilder } from "./ComputePipelineBuilder";
+
+import shaderSrc from "./Shader.wgsl?raw";
+import textureDebugShaderSrc from "./TextureDebugShader.wgsl?raw";
+import computeShaderSrc from "./CShader.wgsl?raw";
 
 export class Drawer extends DrawSystem {
   sphere: Geometry | undefined;
@@ -18,7 +21,8 @@ export class Drawer extends DrawSystem {
 
   modelView: mat4 = mat4.create();
 
-  myTexture : Texture2D;
+  myTexture: Texture2D;
+
 
   constructor(canvas: HTMLCanvasElement) {
     super(canvas);
@@ -117,6 +121,18 @@ export class Drawer extends DrawSystem {
     this.textureDebugBundle = bundleEncoder.finish();
   }
 
+  async GenProceduralTextureWithComputeShader() {
+    if (!this.ctx) throw new Error("this.ctx is undefined");
+    // TODO:
+    // const computeBuilder = new ComputePipelineBuilder(this.ctx);
+    // const computePipeline = computeBuilder.SetCSState(computeShaderSrc).Build();
+    // const bindGroup = this.ctx.device.createBindGroup({
+    //   layout: computePipeline.getBindGroupLayout(0),
+    //   entries:[],
+    //   label: "compute pipeline bindGroupLayout"
+    // });
+  }
+
   async Initialize(): Promise<boolean> {
     if (!this.drawUtil) throw new Error("draw util no goog");
 
@@ -149,9 +165,19 @@ export class Drawer extends DrawSystem {
     );
 
     const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
-    const encoder =
-      this.ctx?.device.createCommandEncoder() as GPUCommandEncoder;
+    const encoder = this.ctx?.device.createCommandEncoder() as GPUCommandEncoder;
+    
+    // compute pass
+    {
+      // TODO:
+      // const computePass = encoder.beginComputePass();
+      // computePass.setPipeline(computePipeline);
+      // computePass.setBindGroup(0,bindGroup);
+      // computePass.dispatchWorkgroups();
+      // computePass.end();
+    }
 
+    // sphere draw
     {
       const renderPass = encoder?.beginRenderPass({
         colorAttachments: [
@@ -174,6 +200,7 @@ export class Drawer extends DrawSystem {
       renderPass.end();
     }
 
+    // texture draw
     {
       const renderPass = encoder?.beginRenderPass({
         colorAttachments: [

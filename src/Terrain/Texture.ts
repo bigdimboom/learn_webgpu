@@ -7,12 +7,9 @@ export enum TextureConstant
 
 
 
-export class Texture2D {
-  width: number = 0;
-  height: number = 0;
+export class Texture2D 
+{
   texture: GPUTexture | undefined;
-  format: GPUTextureFormat | undefined;
-  usage: GPUTextureUsageFlags | undefined;
   sampler : GPUSampler | undefined;
 
   private constructor() {}
@@ -20,21 +17,14 @@ export class Texture2D {
   static async FromURL(device: GPUDevice, path: string, usage: GPUTextureUsageFlags) {
     const res = await fetch(path);
     const img = await res.blob();
-    // const img = document.createElement("img") as HTMLImageElement;
-    // img.src = textureUrl;
-    // await img.decode();
     const bitmap = await createImageBitmap(img);
-
+    
     const obj = new Texture2D();
-    obj.usage = usage;
-    obj.width = bitmap.width;
-    obj.height = bitmap.height;
-    obj.format = "rgba8unorm";
 
     obj.texture = device.createTexture({
-      format: obj.format,
-      size: [obj.width, obj.height, 1],
-      usage: obj.usage,
+      format: 'rgba8unorm',
+      size: [bitmap.width, bitmap.height, 1],
+      usage: usage,
       label: "texture2D"
     });
 

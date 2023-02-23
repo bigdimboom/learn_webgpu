@@ -7,20 +7,38 @@ export enum PipelineConstant {
 }
 
 export class RenderPipelineBuilder {
-  primitive: GPUPrimitiveState | undefined;
-  fragment: GPUFragmentState | undefined;
-  depth: GPUDepthStencilState | undefined;
-  vertex: GPUVertexState | undefined;
-  layout : GPUPipelineLayout | "auto" = "auto";
+  #primitive: GPUPrimitiveState | undefined;
+  #fragment: GPUFragmentState | undefined;
+  #depth: GPUDepthStencilState | undefined;
+  #vertex: GPUVertexState | undefined;
+  #layout: GPUPipelineLayout | "auto" = "auto";
 
   constructor(public ctx: WGPUContext) {}
+
+  SetPipelineLayout(entries: Iterable<Iterable<GPUBindGroupLayoutEntry>>) {
+    const layouts: GPUBindGroupLayout[] = [];
+    for (const subArray of entries) {
+      const bindGroupLayout = this.ctx.device.createBindGroupLayout({
+        entries: subArray,
+        label: "bind group layout",
+      });
+      layouts.push(bindGroupLayout);
+    }
+
+    this.#layout = this.ctx.device.createPipelineLayout({
+      bindGroupLayouts: layouts,
+      label: "pipeline layout",
+    });
+
+    return this;
+  }
 
   SetVertexState(
     vboLayouts: Iterable<GPUVertexBufferLayout>,
     vsCode: string,
     entryPoint: string = PipelineConstant.VS_ENTRY_POINT
   ): RenderPipelineBuilder {
-    this.vertex = {
+    this.#vertex = {
       entryPoint: entryPoint,
       buffers: vboLayouts,
       module: this.ctx.device.createShaderModule({
@@ -32,12 +50,12 @@ export class RenderPipelineBuilder {
   }
 
   SetFragState(
-    format : GPUTextureFormat,
+    format: GPUTextureFormat,
     fsCode: string,
     entryPoint: string = PipelineConstant.FS_ENTRY_POINT,
     blendState?: GPUBlendState
   ): RenderPipelineBuilder {
-    this.fragment = {
+    this.#fragment = {
       entryPoint: entryPoint,
       targets: [{ format: format, blend: blendState }],
       module: this.ctx.device.createShaderModule({
@@ -52,8 +70,7 @@ export class RenderPipelineBuilder {
     depthFormat: GPUTextureFormat,
     depthCompare: GPUCompareFunction = "less"
   ): RenderPipelineBuilder {
-
-    this.depth = {
+    this.#depth = {
       format: depthFormat,
       depthCompare: depthCompare,
       depthWriteEnabled: true,
@@ -67,7 +84,7 @@ export class RenderPipelineBuilder {
     cullMode: GPUCullMode = "back",
     frontFace: GPUFrontFace = "ccw"
   ): RenderPipelineBuilder {
-    this.primitive = {
+    this.#primitive = {
       topology: topology,
       cullMode: cullMode,
       frontFace: frontFace,
@@ -76,27 +93,27 @@ export class RenderPipelineBuilder {
   }
 
   async BuildAsync(): Promise<GPURenderPipeline> {
-    if (!this.vertex) throw Error("Vertex State is not set");
+    if (!this.#vertex) throw Error("Vertex State is not set");
 
     return this.ctx.device.createRenderPipelineAsync({
-      layout: this.layout,
-      vertex: this.vertex,
-      depthStencil: this.depth,
-      fragment: this.fragment,
-      primitive: this.primitive,
+      layout: this.#layout,
+      vertex: this.#vertex,
+      depthStencil: this.#depth,
+      fragment: this.#fragment,
+      primitive: this.#primitive,
       label: "RenderPipeline",
     });
   }
 
   Build(): GPURenderPipeline {
-    if (!this.vertex) throw Error("Vertex State is not set");
+    if (!this.#vertex) throw Error("Vertex State is not set");
 
     return this.ctx.device.createRenderPipeline({
-      layout: this.layout,
-      vertex: this.vertex,
-      depthStencil: this.depth,
-      fragment: this.fragment,
-      primitive: this.primitive,
+      layout: this.#layout,
+      vertex: this.#vertex,
+      depthStencil: this.#depth,
+      fragment: this.#fragment,
+      primitive: this.#primitive,
       label: "RenderPipeline",
     });
   }
