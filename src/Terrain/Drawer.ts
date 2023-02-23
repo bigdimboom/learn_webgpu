@@ -73,7 +73,10 @@ export class Drawer extends DrawSystem {
     return true;
   }
 
-  Update(): void {}
+  Update(): void {
+
+    this.input.Update(this.deltaTS);
+  }
 
   Draw(): void {
     const model = mat4.identity(mat4.create());

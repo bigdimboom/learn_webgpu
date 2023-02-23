@@ -14,6 +14,8 @@ interface MouseStates {
 export class UserInput {
   mouse: MouseStates;
 
+  deltaTime : number = 1;
+
   constructor() {
     this.mouse = {
 
@@ -81,4 +83,10 @@ export class UserInput {
       }
     });
   }
+
+  Update(dt : number)
+  {
+    this.deltaTime = dt;
+  }
+  
 }
