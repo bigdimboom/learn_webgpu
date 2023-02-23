@@ -1,13 +1,13 @@
 import { DrawSystem } from "./DrawSystem";
 import { glMatrix, vec2, vec3, vec4, mat3, mat4 } from "gl-matrix";
-import { UnitBox } from "./Geometry";
-import { RenderPipelineBuilder } from "./PipelineBuilder";
+import { UnitBox, Sphere, Geometry} from "./Geometry";
+import { RenderPipelineBuilder } from "./RenderPipelineBuilder";
 import { WGPUContext } from "../utils/WgpuContext";
 import shaderSrc from "./Shader.wgsl?raw";
 import { DefaultRenderTarget } from "./DrawUtil";
 
 export class Drawer extends DrawSystem {
-  box: UnitBox | undefined;
+  sphere: Geometry | undefined;
   pipelineBuilder: RenderPipelineBuilder | undefined;
   pipeline: GPURenderPipeline | undefined;
   renderBundle: GPURenderBundle | undefined;
@@ -26,10 +26,10 @@ export class Drawer extends DrawSystem {
     this.camera.SetPerspectiveProj(glMatrix.toRadian(60), ratio, 0.01, 500);
     this.camera.FromLookAt(vec3.fromValues(0, 2, 5), vec3.fromValues(0, 0, 0));
 
-    this.box = new UnitBox();
-    this.box.GenerateVBO(this.ctx?.device as GPUDevice);
-    this.box.GenerateIBO(this.ctx?.device as GPUDevice);
-    this.box.GenerateUBO(this.ctx?.device as GPUDevice);
+    this.sphere = new Sphere(1, vec3.fromValues(0,0,0), 100, 100);
+    this.sphere.GenerateVBO(this.ctx?.device as GPUDevice);
+    this.sphere.GenerateIBO(this.ctx?.device as GPUDevice);
+    this.sphere.GenerateUBO(this.ctx?.device as GPUDevice);
 
     this.pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
     this.drawUtil?.GenRenderTarget(true);
@@ -37,7 +37,7 @@ export class Drawer extends DrawSystem {
 
     this.pipeline = await this.pipelineBuilder
       .SetVertexState(
-        this.box.GetVertexAttributeLayouts(),
+        this.sphere.GetVertexAttributeLayouts(),
         shaderSrc,
         "vs_main"
       )
@@ -56,17 +56,17 @@ export class Drawer extends DrawSystem {
       entries: [
         {
           binding: 0,
-          resource: { buffer: this.box.ubo as GPUBuffer, label: "ubo" },
+          resource: { buffer: this.sphere.ubo as GPUBuffer, label: "ubo" },
         },
       ],
       label: "bind group",
     }) as GPUBindGroup;
 
     bundleEncoder.setPipeline(this.pipeline);
-    bundleEncoder.setVertexBuffer(0, this.box.vbo as GPUBuffer);
-    bundleEncoder.setIndexBuffer(this.box.ibo as GPUBuffer, "uint16");
+    bundleEncoder.setVertexBuffer(0, this.sphere.vbo as GPUBuffer);
+    bundleEncoder.setIndexBuffer(this.sphere.ibo as GPUBuffer, "uint16");
     bundleEncoder.setBindGroup(0, bindGroup);
-    bundleEncoder.drawIndexed(this.box.indices.length);
+    bundleEncoder.drawIndexed(this.sphere.indices.length);
 
     this.renderBundle = bundleEncoder.finish();
 
@@ -81,7 +81,7 @@ export class Drawer extends DrawSystem {
   Draw(): void {
     const model = mat4.identity(mat4.create());
 
-    this.box?.UpdateTransform(
+    this.sphere?.UpdateTransform(
       this.ctx?.device as GPUDevice,
       mat4.mul(this.modelView, this.camera.GetView(), model),
       this.camera.proj
