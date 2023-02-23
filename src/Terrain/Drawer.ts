@@ -18,6 +18,8 @@ export class Drawer extends DrawSystem {
 
   modelView: mat4 = mat4.create();
 
+  myTexture : Texture2D;
+
   constructor(canvas: HTMLCanvasElement) {
     super(canvas);
   }
@@ -54,6 +56,11 @@ export class Drawer extends DrawSystem {
           binding: 0,
           resource: { buffer: this.sphere.ubo as GPUBuffer, label: "ubo" },
         },
+        { binding: 1, resource: this.myTexture.sampler as GPUSampler },
+        {
+          binding: 2,
+          resource: this.myTexture.texture?.createView() as GPUTextureView,
+        },
       ],
       label: "bind group",
     }) as GPUBindGroup;
@@ -70,7 +77,7 @@ export class Drawer extends DrawSystem {
   async InitTextureDebugger(url: string) {
     if (!this.ctx) throw new Error("can't get WGPU context");
 
-    const texture = await Texture2D.FromURL(
+    this.myTexture = await Texture2D.FromURL(
       this.ctx.device,
       url,
       TextureConstant.DefaultTextureUsage
@@ -92,10 +99,10 @@ export class Drawer extends DrawSystem {
     const bindGroup = this.ctx.device.createBindGroup({
       layout: pipeline.getBindGroupLayout(0),
       entries: [
-        { binding: 0, resource: texture.sampler as GPUSampler },
+        { binding: 0, resource: this.myTexture.sampler as GPUSampler },
         {
           binding: 1,
-          resource: texture.texture?.createView() as GPUTextureView,
+          resource: this.myTexture.texture?.createView() as GPUTextureView,
         },
       ],
       label: "texture debug bind group",
@@ -120,8 +127,8 @@ export class Drawer extends DrawSystem {
 
     this.drawUtil?.GenRenderTarget(true);
 
-    await this.InitMesh();
     await this.InitTextureDebugger(textureUrl);
+    await this.InitMesh();
 
     return true;
   }
@@ -182,7 +189,7 @@ export class Drawer extends DrawSystem {
 
       const w = this.drawUtil.GetWidth() / 4;
       const h = this.drawUtil.GetHeight() / 4;
-      
+
       renderPass.setViewport(0, 0, w, h, 0, 1);
       renderPass.executeBundles([this.textureDebugBundle as GPURenderBundle]);
       renderPass.end();

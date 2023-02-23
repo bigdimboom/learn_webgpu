@@ -18,10 +18,13 @@ struct VertexIn
 struct VertexOut
 {
     @builtin(position) Position: vec4<f32>,
-    @location(0) color: vec3<f32>
+    @location(0) color: vec3<f32>,
+    @location(1) uv: vec2<f32>
 };
 
 @group(0) @binding(0) var<uniform> MVP : MVPUniformData;
+@group(0) @binding(1) var mySampler: sampler;
+@group(0) @binding(2) var myTexture: texture_2d<f32>;
 
 
 fn normal2color(n: vec3<f32>) -> vec3<f32>
@@ -36,11 +39,13 @@ fn vs_main(in : VertexIn)-> VertexOut
     var out : VertexOut;
     out.Position = MVP.proj * MVP.modelview * vec4<f32>(in.vPosition, 1.0);
     out.color = normal2color(in.vNormal);
+    out.uv = in.vUV;
     return out;
 }
 
 @fragment
-fn fs_main(@location(0) color: vec3<f32>) -> @location(0) vec4<f32>
+fn fs_main(@location(0) color: vec3<f32>, @location(1) uv: vec2<f32>) -> @location(0) vec4<f32>
 {
-    return vec4<f32>(color, 1.0);
+    let nColor = vec4<f32>(color, 1.0);
+    return (textureSample(myTexture, mySampler, uv) + nColor) * 0.5;
 }

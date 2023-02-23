@@ -18,8 +18,8 @@ export default function App() {
     <>
       <canvas
         ref={canvasRef}
-        width="640"
-        height="480"
+        width="512"
+        height="512"
         style={{ color: "violet", border: "solid" }}
       ></canvas>
     </>
