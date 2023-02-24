@@ -21,15 +21,17 @@ export class Drawer extends DrawSystem {
 
   modelView: mat4 = mat4.create();
 
-  myTexture: Texture2D;
-  computePipeline: GPUComputePipeline;
-  computeBindGroup: GPUBindGroup;
+  myTexture: Texture2D | undefined;
+  computePipeline: GPUComputePipeline | undefined;
+  computeBindGroup: GPUBindGroup | undefined;
 
   constructor(canvas: HTMLCanvasElement) {
     super(canvas);
   }
 
   async InitMesh() {
+    if (!this.myTexture) throw new Error("Texture2D no good");
+
     this.sphere = new Sphere(1, vec3.fromValues(0, 0, 0), 100, 100);
     this.sphere.GenerateVBO(this.ctx?.device as GPUDevice);
     this.sphere.GenerateIBO(this.ctx?.device as GPUDevice);
@@ -79,9 +81,9 @@ export class Drawer extends DrawSystem {
     this.renderBundle = bundleEncoder.finish();
   }
 
-  async ConfigureTextureDebuggerPipeline()
-  {
-    if(!this.ctx) throw new Error("BAD WGPUContext");
+  async ConfigureTextureDebuggerPipeline() {
+    if (!this.ctx) throw new Error("BAD WGPUContext");
+    if (!this.myTexture) throw new Error("Texture2D no good");
 
     this.pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
     const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
@@ -141,32 +143,35 @@ export class Drawer extends DrawSystem {
         GPUTextureUsage.COPY_DST |
         GPUTextureUsage.STORAGE_BINDING |
         GPUTextureUsage.TEXTURE_BINDING |
-        GPUTextureUsage.RENDER_ATTACHMENT
+        GPUTextureUsage.RENDER_ATTACHMENT,
     });
     await this.ConfigureTextureDebuggerPipeline();
 
     const computeBuilder = new ComputePipelineBuilder(this.ctx);
 
-    this.computePipeline = computeBuilder.SetCSState(computeShaderSrc, "cs_main").SetPipelineLayout([
-      [
-        {
-          binding: 0,
-          visibility: GPUShaderStage.COMPUTE,
-          storageTexture: {
-            format: "rgba8unorm",
-            access: "write-only",
-            viewDimension : "2d"
-          }
-        }
-      ]
-    ]).Build();
+    this.computePipeline = computeBuilder
+      .SetCSState(computeShaderSrc, "cs_main")
+      .SetPipelineLayout([
+        [
+          {
+            binding: 0,
+            visibility: GPUShaderStage.COMPUTE,
+            storageTexture: {
+              format: "rgba8unorm",
+              access: "write-only",
+              viewDimension: "2d",
+            },
+          },
+        ],
+      ])
+      .Build();
     this.computeBindGroup = this.ctx.device.createBindGroup({
       layout: this.computePipeline.getBindGroupLayout(0),
       entries: [
         {
           binding: 0,
-          resource : this.myTexture.texture?.createView() as GPUTextureView
-        }
+          resource: this.myTexture.texture?.createView() as GPUTextureView,
+        },
       ],
       label: "compute pipeline bindGroupLayout",
     });
@@ -182,8 +187,10 @@ export class Drawer extends DrawSystem {
 
     this.drawUtil?.GenRenderTarget(true);
 
-    await this.GenProceduralTextureWithComputeShader();
+    // 1st. Make sure regular texture loads
     //await this.InitTextureDebugger(textureUrl);
+
+    await this.GenProceduralTextureWithComputeShader();
     await this.InitMesh();
 
     return true;
@@ -195,6 +202,8 @@ export class Drawer extends DrawSystem {
 
   Draw(): void {
     if (!this.drawUtil) throw new Error("draw util no goog");
+    if (!this.computePipeline) throw new Error("computePipeline no good");
+    if (!this.computeBindGroup) throw new Error("computeBindGroup no good");
 
     const model = mat4.identity(mat4.create());
 
@@ -210,13 +219,13 @@ export class Drawer extends DrawSystem {
     // compute pass
     {
       // TODO:
-      const computePass = encoder.beginComputePass({label: 'compute pass'});
+      const computePass = encoder.beginComputePass({ label: "compute pass" });
       computePass.setPipeline(this.computePipeline);
       computePass.setBindGroup(0, this.computeBindGroup);
       computePass.dispatchWorkgroups(256, 256, 1);
       computePass.end();
     }
-    
+
     const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
     // sphere draw
     {

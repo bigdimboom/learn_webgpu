@@ -99,3 +99,10 @@ Env Update: Chrome 110, Windows, WebGPU on Linux has bugs
 ## Chapter 7: Offscreen
 Offscreen is the basics of a lot special effects, e.g. shadow map, deferred rendering
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/offscreen.gif "Chapter 7")
+
+## Chapter 8: Compute (Terrian demo - setup)
+1. make sure texture map works
+2. display/debug texture in a sub view port
+3. hook up compute pipeline and what has been set up in step 2 for debug
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/compute1.jpg "Chapter 8")
+![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/compute2.jpg "Chapter 8")
