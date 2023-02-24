@@ -14,6 +14,16 @@ export class Texture2D
 
   private constructor() {}
 
+  static Create(device: GPUDevice, descriptor: GPUTextureDescriptor)
+  {
+    const obj = new Texture2D();
+    obj.texture = device.createTexture(descriptor);
+    obj.sampler = device.createSampler({
+      label: "Texture 2D Sampler",
+    });
+    return obj;
+  }
+
   static async FromURL(device: GPUDevice, path: string, usage: GPUTextureUsageFlags) {
     const res = await fetch(path);
     const img = await res.blob();

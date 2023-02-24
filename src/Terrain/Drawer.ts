@@ -22,7 +22,8 @@ export class Drawer extends DrawSystem {
   modelView: mat4 = mat4.create();
 
   myTexture: Texture2D;
-
+  computePipeline: GPUComputePipeline;
+  computeBindGroup: GPUBindGroup;
 
   constructor(canvas: HTMLCanvasElement) {
     super(canvas);
@@ -78,14 +79,9 @@ export class Drawer extends DrawSystem {
     this.renderBundle = bundleEncoder.finish();
   }
 
-  async InitTextureDebugger(url: string) {
-    if (!this.ctx) throw new Error("can't get WGPU context");
-
-    this.myTexture = await Texture2D.FromURL(
-      this.ctx.device,
-      url,
-      TextureConstant.DefaultTextureUsage
-    );
+  async ConfigureTextureDebuggerPipeline()
+  {
+    if(!this.ctx) throw new Error("BAD WGPUContext");
 
     this.pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
     const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
@@ -121,16 +117,59 @@ export class Drawer extends DrawSystem {
     this.textureDebugBundle = bundleEncoder.finish();
   }
 
+  async InitTextureDebugger(url: string) {
+    if (!this.ctx) throw new Error("can't get WGPU context");
+
+    this.myTexture = await Texture2D.FromURL(
+      this.ctx.device,
+      url,
+      TextureConstant.DefaultTextureUsage
+    );
+
+    await this.ConfigureTextureDebuggerPipeline();
+  }
+
   async GenProceduralTextureWithComputeShader() {
     if (!this.ctx) throw new Error("this.ctx is undefined");
-    // TODO:
-    // const computeBuilder = new ComputePipelineBuilder(this.ctx);
-    // const computePipeline = computeBuilder.SetCSState(computeShaderSrc).Build();
-    // const bindGroup = this.ctx.device.createBindGroup({
-    //   layout: computePipeline.getBindGroupLayout(0),
-    //   entries:[],
-    //   label: "compute pipeline bindGroupLayout"
-    // });
+
+    this.myTexture = Texture2D.Create(this.ctx.device, {
+      size: [256, 256],
+      dimension: "2d",
+      format: "rgba8unorm",
+      usage:
+        GPUTextureUsage.COPY_SRC |
+        GPUTextureUsage.COPY_DST |
+        GPUTextureUsage.STORAGE_BINDING |
+        GPUTextureUsage.TEXTURE_BINDING |
+        GPUTextureUsage.RENDER_ATTACHMENT
+    });
+    await this.ConfigureTextureDebuggerPipeline();
+
+    const computeBuilder = new ComputePipelineBuilder(this.ctx);
+
+    this.computePipeline = computeBuilder.SetCSState(computeShaderSrc, "cs_main").SetPipelineLayout([
+      [
+        {
+          binding: 0,
+          visibility: GPUShaderStage.COMPUTE,
+          storageTexture: {
+            format: "rgba8unorm",
+            access: "write-only",
+            viewDimension : "2d"
+          }
+        }
+      ]
+    ]).Build();
+    this.computeBindGroup = this.ctx.device.createBindGroup({
+      layout: this.computePipeline.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 0,
+          resource : this.myTexture.texture?.createView() as GPUTextureView
+        }
+      ],
+      label: "compute pipeline bindGroupLayout",
+    });
   }
 
   async Initialize(): Promise<boolean> {
@@ -143,7 +182,8 @@ export class Drawer extends DrawSystem {
 
     this.drawUtil?.GenRenderTarget(true);
 
-    await this.InitTextureDebugger(textureUrl);
+    await this.GenProceduralTextureWithComputeShader();
+    //await this.InitTextureDebugger(textureUrl);
     await this.InitMesh();
 
     return true;
@@ -164,22 +204,23 @@ export class Drawer extends DrawSystem {
       this.camera.proj
     );
 
-    const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
-    const encoder = this.ctx?.device.createCommandEncoder() as GPUCommandEncoder;
-    
+    const encoder =
+      this.ctx?.device.createCommandEncoder() as GPUCommandEncoder;
+
     // compute pass
     {
       // TODO:
-      // const computePass = encoder.beginComputePass();
-      // computePass.setPipeline(computePipeline);
-      // computePass.setBindGroup(0,bindGroup);
-      // computePass.dispatchWorkgroups();
-      // computePass.end();
+      const computePass = encoder.beginComputePass({label: 'compute pass'});
+      computePass.setPipeline(this.computePipeline);
+      computePass.setBindGroup(0, this.computeBindGroup);
+      computePass.dispatchWorkgroups(256, 256, 1);
+      computePass.end();
     }
-
+    
+    const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
     // sphere draw
     {
-      const renderPass = encoder?.beginRenderPass({
+      const renderPass = encoder.beginRenderPass({
         colorAttachments: [
           {
             loadOp: "clear",
@@ -202,7 +243,7 @@ export class Drawer extends DrawSystem {
 
     // texture draw
     {
-      const renderPass = encoder?.beginRenderPass({
+      const renderPass = encoder.beginRenderPass({
         colorAttachments: [
           {
             loadOp: "load",
