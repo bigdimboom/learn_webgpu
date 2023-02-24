@@ -103,6 +103,6 @@ Offscreen is the basics of a lot special effects, e.g. shadow map, deferred rend
 ## Chapter 8: Compute (Terrian demo - setup)
 1. make sure texture map works
 2. display/debug texture in a sub view port
-3. hook up compute pipeline and what has been set up in step 2 for debug
+3. hook up compute pipeline and use what has been set up in step 2 for debug
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/compute1.jpg "Chapter 8")
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/compute2.jpg "Chapter 8")
