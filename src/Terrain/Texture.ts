@@ -20,6 +20,8 @@ export class Texture2D
     obj.texture = device.createTexture(descriptor);
     obj.sampler = device.createSampler({
       label: "Texture 2D Sampler",
+      addressModeU: "repeat",
+      addressModeV: "repeat",
     });
     return obj;
   }

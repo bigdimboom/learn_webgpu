@@ -26,6 +26,7 @@ struct VertexOut
 @group(0) @binding(1) var mySampler: sampler;
 @group(0) @binding(2) var myTexture: texture_2d<f32>;
 
+const WEIGHT : f32 = 0.9;
 
 fn normal2color(n: vec3<f32>) -> vec3<f32>
 {
@@ -36,8 +37,15 @@ fn normal2color(n: vec3<f32>) -> vec3<f32>
 @vertex
 fn vs_main(in : VertexIn)-> VertexOut
 {
+    //let height = textureSampleBaseClampToEdge(myTexture, mySampler, in.vUV).x;
+    let height = textureSampleLevel(myTexture, mySampler, in.vUV, 0).x;
+    let dir = normalize(in.vPosition.xyz);
+    let scale = length(in.vPosition.xyz);
+    let pos = dir * (scale + height * WEIGHT);
+
+
     var out : VertexOut;
-    out.Position = MVP.proj * MVP.modelview * vec4<f32>(in.vPosition, 1.0);
+    out.Position = MVP.proj * MVP.modelview * vec4<f32>(pos, 1.0);
     out.color = normal2color(in.vNormal);
     out.uv = in.vUV;
     return out;
@@ -46,6 +54,7 @@ fn vs_main(in : VertexIn)-> VertexOut
 @fragment
 fn fs_main(@location(0) color: vec3<f32>, @location(1) uv: vec2<f32>) -> @location(0) vec4<f32>
 {
-    let nColor = vec4<f32>(color, 1.0);
-    return (textureSample(myTexture, mySampler, uv) + nColor) * 0.5;
+    let nColor = vec4<f32>(0,0,0, 1.0);
+    //return nColor;
+    return (textureSample(myTexture, mySampler, uv) + nColor) * 1.0;
 }

@@ -32,7 +32,7 @@ export class Drawer extends DrawSystem {
   async InitMesh() {
     if (!this.myTexture) throw new Error("Texture2D no good");
 
-    this.sphere = new Sphere(1, vec3.fromValues(0, 0, 0), 100, 100);
+    this.sphere = new Sphere(2, vec3.fromValues(0, 0, 0), 256, 256);
     this.sphere.GenerateVBO(this.ctx?.device as GPUDevice);
     this.sphere.GenerateIBO(this.ctx?.device as GPUDevice);
     this.sphere.GenerateUBO(this.ctx?.device as GPUDevice);
