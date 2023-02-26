@@ -13,11 +13,13 @@ import shaderSrc from "./Shader.wgsl?raw";
 import textureDebugShaderSrc from "./TextureDebugShader.wgsl?raw";
 import computeShaderSrc from "./CShader.wgsl?raw";
 
+import terrainShaderSrc from "./TerrainShader.wgsl?raw";
+
 export class Drawer extends DrawSystem {
   sphere: Geometry | undefined;
-  pipelineBuilder: RenderPipelineBuilder | undefined;
   renderBundle: GPURenderBundle | undefined;
   textureDebugBundle: GPURenderBundle | undefined;
+  terrainBundle: GPURenderBundle | undefined;
 
   modelView: mat4 = mat4.create();
 
@@ -29,7 +31,7 @@ export class Drawer extends DrawSystem {
     super(canvas);
   }
 
-  async InitMesh() {
+  async InitSphereMesh() {
     if (!this.myTexture) throw new Error("Texture2D no good");
 
     this.sphere = new Sphere(2, vec3.fromValues(0, 0, 0), 256, 256);
@@ -37,10 +39,10 @@ export class Drawer extends DrawSystem {
     this.sphere.GenerateIBO(this.ctx?.device as GPUDevice);
     this.sphere.GenerateUBO(this.ctx?.device as GPUDevice);
 
-    this.pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
+    const pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
     const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
 
-    const pipeline = await this.pipelineBuilder
+    const pipeline = await pipelineBuilder
       .SetVertexState(
         this.sphere.GetVertexAttributeLayouts(),
         shaderSrc,
@@ -85,10 +87,10 @@ export class Drawer extends DrawSystem {
     if (!this.ctx) throw new Error("BAD WGPUContext");
     if (!this.myTexture) throw new Error("Texture2D no good");
 
-    this.pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
+    const pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
     const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
 
-    const pipeline = await this.pipelineBuilder
+    const pipeline = await pipelineBuilder
       .SetVertexState([], textureDebugShaderSrc, "vs_main")
       .SetFragState(
         target.colorAttachment.format,
@@ -177,6 +179,70 @@ export class Drawer extends DrawSystem {
     });
   }
 
+  async GenTerrain() {
+    if (!this.ctx) throw new Error("no wgpu context ava");
+    if (!this.drawUtil) throw new Error("no draw util");
+    if (!this.sphere?.ubo) throw new Error("no ubo ava");
+    if (!this.myTexture) throw new Error("Texture2D no good");
+
+    const GridRez = 256;
+    const indices: number[] = [];
+    for (let r = 0; r < GridRez - 1; r++) {
+      for (let c = 0; c < GridRez - 1; c++) {
+        indices.push(r * GridRez + c);
+        indices.push((r + 1) * GridRez + c);
+        indices.push((r + 1) * GridRez + c + 1);
+
+        indices.push(r * GridRez + c);
+        indices.push((r + 1) * GridRez + c + 1);
+        indices.push(r * GridRez + c + 1);
+      }
+    }
+    const iboHostData = new Uint32Array(indices);
+    const ibo = this.ctx.device.createBuffer({
+      size: iboHostData.byteLength,
+      usage: GPUBufferUsage.INDEX | GPUBufferUsage.COPY_DST,
+    });
+    this.ctx.device.queue.writeBuffer(ibo, 0, iboHostData);
+
+    const pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
+    const target = this.drawUtil.GetRenderTarget() as DefaultRenderTarget;
+    if (!target.depthStencil) throw new Error("can't acquire depth");
+
+    const pipeline = await pipelineBuilder
+      .SetVertexState([], terrainShaderSrc, "vs_main")
+      .SetFragState(target.colorAttachment.format, terrainShaderSrc, "fs_main")
+      .SetDepthStencil(target.depthStencil.format as GPUTextureFormat)
+      .SetPrimitiveState("triangle-list", "none", "ccw")
+      .BuildAsync();
+
+    const bindGroup = this.ctx.device.createBindGroup({
+      layout: pipeline.getBindGroupLayout(0),
+      entries: [
+        {
+          binding: 0,
+          resource: { buffer: this.sphere.ubo as GPUBuffer, label: "ubo" },
+        },
+        { binding: 1, resource: this.myTexture.sampler as GPUSampler },
+        {
+          binding: 2,
+          resource: this.myTexture.texture?.createView() as GPUTextureView,
+        },
+      ],
+      label: "bind group",
+    }) as GPUBindGroup;
+
+    const encoder = this.ctx.device.createRenderBundleEncoder({
+      colorFormats: [target.colorAttachment.format],
+      depthStencilFormat: target.depthStencil.format,
+    });
+    encoder.setPipeline(pipeline);
+    encoder.setIndexBuffer(ibo, 'uint32');
+    encoder.setBindGroup(0, bindGroup);
+    encoder.drawIndexed(iboHostData.length);
+    this.terrainBundle = encoder.finish();
+  }
+
   async Initialize(): Promise<boolean> {
     if (!this.drawUtil) throw new Error("draw util no goog");
 
@@ -191,7 +257,8 @@ export class Drawer extends DrawSystem {
     //await this.InitTextureDebugger(textureUrl);
 
     await this.GenProceduralTextureWithComputeShader();
-    await this.InitMesh();
+    await this.InitSphereMesh();
+    await this.GenTerrain();
 
     return true;
   }
@@ -228,6 +295,29 @@ export class Drawer extends DrawSystem {
 
     const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
     // sphere draw
+    // {
+    //   const renderPass = encoder.beginRenderPass({
+    //     colorAttachments: [
+    //       {
+    //         loadOp: "clear",
+    //         storeOp: "store",
+    //         view: target.colorAttachment.createView(),
+    //         clearValue: [0.2, 0.5, 0.8, 1.0],
+    //       },
+    //     ],
+    //     depthStencilAttachment: {
+    //       depthLoadOp: "clear",
+    //       depthStoreOp: "store",
+    //       depthClearValue: 1.0,
+    //       view: target.depthStencil?.createView() as GPUTextureView,
+    //     },
+    //     label: "render pass",
+    //   }) as GPURenderPassEncoder;
+    //   renderPass.executeBundles([this.renderBundle as GPURenderBundle]);
+    //   renderPass.end();
+    // }
+
+    //terrain draw
     {
       const renderPass = encoder.beginRenderPass({
         colorAttachments: [
@@ -244,9 +334,9 @@ export class Drawer extends DrawSystem {
           depthClearValue: 1.0,
           view: target.depthStencil?.createView() as GPUTextureView,
         },
-        label: "render pass",
+        label: "render pass: terrain",
       }) as GPURenderPassEncoder;
-      renderPass.executeBundles([this.renderBundle as GPURenderBundle]);
+      renderPass.executeBundles([this.terrainBundle as GPURenderBundle]);
       renderPass.end();
     }
 
@@ -261,7 +351,7 @@ export class Drawer extends DrawSystem {
             clearValue: [1.0, 0.2, 0.5, 1.0],
           },
         ],
-        label: "render pass 2",
+        label: "render pass: texture debug view port",
       }) as GPURenderPassEncoder;
 
       const w = this.drawUtil.GetWidth() / 4;

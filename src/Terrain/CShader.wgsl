@@ -7,8 +7,8 @@ const REZ : u32 = 256;
 
 const _CellAmount : u32 = 4; // 1,32
 const _Period : vec2<f32> = vec2<f32>(4,4);
-const _Roughness : i32 = 4; // 1 - 8
-const _Persistance : f32 = 0.4; // 0 - 1
+const _Roughness : i32 = 2; // 1 - 8
+const _Persistance : f32 = 0.3; // 0 - 1
 const OCTAVES : i32 = 4; 
 
 

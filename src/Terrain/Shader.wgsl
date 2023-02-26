@@ -26,7 +26,7 @@ struct VertexOut
 @group(0) @binding(1) var mySampler: sampler;
 @group(0) @binding(2) var myTexture: texture_2d<f32>;
 
-const WEIGHT : f32 = 0.9;
+const HEIGHT_WEIGHT : f32 = 0.9;
 
 fn normal2color(n: vec3<f32>) -> vec3<f32>
 {
@@ -41,7 +41,7 @@ fn vs_main(in : VertexIn)-> VertexOut
     let height = textureSampleLevel(myTexture, mySampler, in.vUV, 0).x;
     let dir = normalize(in.vPosition.xyz);
     let scale = length(in.vPosition.xyz);
-    let pos = dir * (scale + height * WEIGHT);
+    let pos = dir * (scale + height * HEIGHT_WEIGHT);
 
 
     var out : VertexOut;
