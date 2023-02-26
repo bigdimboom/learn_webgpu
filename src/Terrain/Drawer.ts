@@ -15,6 +15,22 @@ import computeShaderSrc from "./CShader.wgsl?raw";
 
 import terrainShaderSrc from "./TerrainShader.wgsl?raw";
 
+
+// import
+import textureGrassUrl from '../assets/terrain/grass.jpg?url'
+import textureDirtUrl from '../assets/terrain/dirt.jpg?url'
+import textureRockUrl from '../assets/terrain/rock.jpg?url'
+import textureSandUrl from '../assets/terrain/sand.jpg?url'
+import textureSnowUrl from '../assets/terrain/snow.jpg?url'
+
+const TERRAIN_TEXTURE_URLS = [
+  textureGrassUrl,
+  textureDirtUrl,
+  textureSandUrl,
+  textureRockUrl,
+  textureSnowUrl,
+] ;
+
 export class Drawer extends DrawSystem {
   sphere: Geometry | undefined;
   renderBundle: GPURenderBundle | undefined;
@@ -205,6 +221,13 @@ export class Drawer extends DrawSystem {
     });
     this.ctx.device.queue.writeBuffer(ibo, 0, iboHostData);
 
+    // texture for splatting
+    const terrainTextureArray = await Texture2D.FromManyURL(
+      this.ctx.device,
+      TERRAIN_TEXTURE_URLS,
+      TextureConstant.DefaultTextureUsage
+    );
+
     const pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
     const target = this.drawUtil.GetRenderTarget() as DefaultRenderTarget;
     if (!target.depthStencil) throw new Error("can't acquire depth");
@@ -228,6 +251,15 @@ export class Drawer extends DrawSystem {
           binding: 2,
           resource: this.myTexture.texture?.createView() as GPUTextureView,
         },
+        {
+          binding: 3,
+          resource: terrainTextureArray.texture.createView({
+            arrayLayerCount: terrainTextureArray.texture.depthOrArrayLayers,
+            dimension: "2d-array",
+            baseArrayLayer: 0,
+            format: "rgba8unorm",
+          }),
+        },
       ],
       label: "bind group",
     }) as GPUBindGroup;
@@ -248,8 +280,9 @@ export class Drawer extends DrawSystem {
 
     // init camera position
     const ratio = this.drawUtil.GetWidth() / this.drawUtil.GetHeight();
-    this.camera.SetPerspectiveProj(glMatrix.toRadian(60), ratio, 0.01, 500);
-    this.camera.FromLookAt(vec3.fromValues(0, 2, 5), vec3.fromValues(0, 0, 0));
+    this.camera.ConfigureMovementSensitivity(2);
+    this.camera.SetPerspectiveProj(glMatrix.toRadian(60), ratio, 0.01, 5000);
+    this.camera.FromLookAt(vec3.fromValues(-5, 30, 10), vec3.fromValues(5, 5, 0));
 
     this.drawUtil?.GenRenderTarget(true);
 

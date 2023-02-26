@@ -121,5 +121,5 @@ fn cs_main(@builtin(global_invocation_id) global_id: vec3<u32>)
 	let uv = vec2<f32>(global_id.xy) / f32(REZ - 1);
 	let value = uv * f32(_CellAmount);
 	let noise = sampleLayeredNoise(value) + 0.5;
-	textureStore(dest, vec2<i32>(global_id.xy), vec4<f32>(vec3<f32>(noise,noise,noise), 1.0));
+	textureStore(dest, vec2<i32>(global_id.xy), vec4<f32>(vec3<f32>(noise), 1.0));
 }
