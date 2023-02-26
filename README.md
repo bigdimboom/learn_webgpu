@@ -111,4 +111,5 @@ Offscreen is the basics of a lot special effects, e.g. shadow map, deferred rend
 1. Compute Shader
 2. Texture 2D Array
 3. Texture Splatting
+
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/terrain.jpg "Chapter 9")
