@@ -1,27 +1,25 @@
-import { DrawSystem } from "./DrawSystem";
+import { DrawSystem } from "../utils/DrawSystem";
 import { glMatrix, vec2, vec3, vec4, mat3, mat4 } from "gl-matrix";
-import { UnitBox, Sphere, Geometry } from "./Geometry";
-import { RenderPipelineBuilder } from "./RenderPipelineBuilder";
+import { UnitBox, Sphere, Geometry } from "../utils/Geometry";
+import { RenderPipelineBuilder } from "../utils/RenderPipelineBuilder";
 import { WGPUContext } from "../utils/WgpuContext";
-import { DefaultRenderTarget } from "./DrawUtil";
+import { DefaultRenderTarget } from "../utils/DrawUtil";
 
 import textureUrl from "../assets/texture.png?url";
 import { Texture2D, TextureConstant } from "./Texture";
-import { ComputePipelineBuilder } from "./ComputePipelineBuilder";
+import { ComputePipelineBuilder } from "../utils/ComputePipelineBuilder";
 
 import shaderSrc from "./Shader.wgsl?raw";
-import textureDebugShaderSrc from "./TextureDebugShader.wgsl?raw";
 import computeShaderSrc from "./CShader.wgsl?raw";
 
 import terrainShaderSrc from "./TerrainShader.wgsl?raw";
 
-
 // import
-import textureGrassUrl from '../assets/terrain/grass.jpg?url'
-import textureDirtUrl from '../assets/terrain/dirt.jpg?url'
-import textureRockUrl from '../assets/terrain/rock.jpg?url'
-import textureSandUrl from '../assets/terrain/sand.jpg?url'
-import textureSnowUrl from '../assets/terrain/snow.jpg?url'
+import textureGrassUrl from "../assets/terrain/grass.jpg?url";
+import textureDirtUrl from "../assets/terrain/dirt.jpg?url";
+import textureRockUrl from "../assets/terrain/rock.jpg?url";
+import textureSandUrl from "../assets/terrain/sand.jpg?url";
+import textureSnowUrl from "../assets/terrain/snow.jpg?url";
 
 const TERRAIN_TEXTURE_URLS = [
   textureGrassUrl,
@@ -29,7 +27,7 @@ const TERRAIN_TEXTURE_URLS = [
   textureSandUrl,
   textureRockUrl,
   textureSnowUrl,
-] ;
+];
 
 export class Drawer extends DrawSystem {
   sphere: Geometry | undefined;
@@ -99,44 +97,6 @@ export class Drawer extends DrawSystem {
     this.renderBundle = bundleEncoder.finish();
   }
 
-  async ConfigureTextureDebuggerPipeline() {
-    if (!this.ctx) throw new Error("BAD WGPUContext");
-    if (!this.myTexture) throw new Error("Texture2D no good");
-
-    const pipelineBuilder = new RenderPipelineBuilder(this.ctx as WGPUContext);
-    const target = this.drawUtil?.GetRenderTarget() as DefaultRenderTarget;
-
-    const pipeline = await pipelineBuilder
-      .SetVertexState([], textureDebugShaderSrc, "vs_main")
-      .SetFragState(
-        target.colorAttachment.format,
-        textureDebugShaderSrc,
-        "fs_main"
-      )
-      .SetPrimitiveState("triangle-list", "none")
-      .BuildAsync();
-
-    const bindGroup = this.ctx.device.createBindGroup({
-      layout: pipeline.getBindGroupLayout(0),
-      entries: [
-        { binding: 0, resource: this.myTexture.sampler as GPUSampler },
-        {
-          binding: 1,
-          resource: this.myTexture.texture?.createView() as GPUTextureView,
-        },
-      ],
-      label: "texture debug bind group",
-    });
-
-    const bundleEncoder = this.ctx.device.createRenderBundleEncoder({
-      colorFormats: [target.colorAttachment.format],
-    }) as GPURenderBundleEncoder;
-    bundleEncoder.setPipeline(pipeline);
-    bundleEncoder.setBindGroup(0, bindGroup);
-    bundleEncoder.draw(6);
-    this.textureDebugBundle = bundleEncoder.finish();
-  }
-
   async InitTextureDebugger(url: string) {
     if (!this.ctx) throw new Error("can't get WGPU context");
 
@@ -146,7 +106,10 @@ export class Drawer extends DrawSystem {
       TextureConstant.DefaultTextureUsage
     );
 
-    await this.ConfigureTextureDebuggerPipeline();
+    this.textureDebugBundle = await this.drawUtil?.GenTextureDebuggerBundle(
+      this.myTexture.texture,
+      this.myTexture.sampler
+    );
   }
 
   async GenProceduralTextureWithComputeShader() {
@@ -163,7 +126,11 @@ export class Drawer extends DrawSystem {
         GPUTextureUsage.TEXTURE_BINDING |
         GPUTextureUsage.RENDER_ATTACHMENT,
     });
-    await this.ConfigureTextureDebuggerPipeline();
+
+    this.textureDebugBundle = await this.drawUtil?.GenTextureDebuggerBundle(
+      this.myTexture.texture,
+      this.myTexture.sampler
+    );
 
     const computeBuilder = new ComputePipelineBuilder(this.ctx);
 
@@ -269,7 +236,7 @@ export class Drawer extends DrawSystem {
       depthStencilFormat: target.depthStencil.format,
     });
     encoder.setPipeline(pipeline);
-    encoder.setIndexBuffer(ibo, 'uint32');
+    encoder.setIndexBuffer(ibo, "uint32");
     encoder.setBindGroup(0, bindGroup);
     encoder.drawIndexed(iboHostData.length);
     this.terrainBundle = encoder.finish();
@@ -282,13 +249,15 @@ export class Drawer extends DrawSystem {
     const ratio = this.drawUtil.GetWidth() / this.drawUtil.GetHeight();
     this.camera.ConfigureMovementSensitivity(2);
     this.camera.SetPerspectiveProj(glMatrix.toRadian(60), ratio, 0.01, 5000);
-    this.camera.FromLookAt(vec3.fromValues(-5, 30, 10), vec3.fromValues(5, 5, 0));
+    this.camera.FromLookAt(
+      vec3.fromValues(-5, 30, 10),
+      vec3.fromValues(5, 5, 0)
+    );
 
     this.drawUtil?.GenRenderTarget(true);
 
     // 1st. Make sure regular texture loads
     //await this.InitTextureDebugger(textureUrl);
-
     await this.GenProceduralTextureWithComputeShader();
     await this.InitSphereMesh();
     await this.GenTerrain();

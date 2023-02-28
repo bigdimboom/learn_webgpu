@@ -1,4 +1,4 @@
-import { WGPUContext } from "../utils/WgpuContext";
+import { WGPUContext } from "./WgpuContext";
 import { DefaultRenderTarget } from "./DrawUtil";
 
 export enum PipelineConstant {

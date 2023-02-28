@@ -1,16 +1,16 @@
-import { BindFreeLookCamWithInput } from "../utils/Common";
-import { FreeLookCam } from "../utils/FreeLookCam";
-import { UserInput } from "../utils/UserInput";
-import { initWebGPU, WGPUContext } from "../utils/WgpuContext";
+import { BindFreeLookCamWithInput } from "./Common";
+import { FreeLookCam } from "./FreeLookCam";
+import { UserInput } from "./UserInput";
+import { initWebGPU, WGPUContext } from "./WgpuContext";
 import { DrawUtil } from "./DrawUtil";
 
 export abstract class DrawSystem {
   ctx: WGPUContext | undefined;
-  lastTS : number = 0;
-  deltaTS : number = 0;
-  input : UserInput;
+  lastTS: number = 0;
+  deltaTS: number = 0;
+  input: UserInput;
   camera: FreeLookCam;
-  drawUtil : DrawUtil | undefined;
+  drawUtil: DrawUtil | undefined;
 
   constructor(public canvas: HTMLCanvasElement) {
     this.input = new UserInput();
@@ -23,12 +23,23 @@ export abstract class DrawSystem {
   abstract Update(): void;
   abstract Draw(): void;
 
+  // protected CheckContext()
+  // {
+  //   if(!this.ctx) throw new Error("no wgpu context has established");
+  //   if(!this.drawUtil) throw new Error("no drawUtil has established");
+  // }
+
   private async Run() {
     this.ctx = await initWebGPU(this.canvas);
-    this.drawUtil = new DrawUtil(this.ctx);
 
     if (!this.ctx.device) {
       throw new Error("WebGPU Context Init Failed");
+    }
+
+    this.drawUtil = new DrawUtil(this.ctx);
+
+    if (!this.drawUtil) {
+      throw new Error("Draw Util Failed");
     }
 
     if (!(await this.Initialize())) {
@@ -36,7 +47,6 @@ export abstract class DrawSystem {
     }
 
     function myAnimationLoop(timestamp: number, native: DrawSystem) {
-
       native.deltaTS = timestamp - native.lastTS;
       native.Update();
       native.Draw();

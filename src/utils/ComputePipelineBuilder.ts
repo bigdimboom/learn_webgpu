@@ -1,4 +1,4 @@
-import { WGPUContext } from "../utils/WgpuContext";
+import { WGPUContext } from "./WgpuContext";
 
 export class ComputePipelineBuilder {
   #compute: GPUProgrammableStage | undefined;
