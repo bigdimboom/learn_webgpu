@@ -106,7 +106,7 @@ export class Drawer extends DrawSystem {
       TextureConstant.DefaultTextureUsage
     );
 
-    this.textureDebugBundle = await this.drawUtil?.GenTextureDebuggerBundle(
+    this.textureDebugBundle = await this.drawUtil?.GenTextureDebuggerBundleAsync(
       this.myTexture.texture,
       this.myTexture.sampler
     );
@@ -127,7 +127,7 @@ export class Drawer extends DrawSystem {
         GPUTextureUsage.RENDER_ATTACHMENT,
     });
 
-    this.textureDebugBundle = await this.drawUtil?.GenTextureDebuggerBundle(
+    this.textureDebugBundle = await this.drawUtil?.GenTextureDebuggerBundleAsync(
       this.myTexture.texture,
       this.myTexture.sampler
     );

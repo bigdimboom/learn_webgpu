@@ -25,7 +25,7 @@ export default function App() {
         height="320"
         style={{ color: "violet", border: "solid" }}
       ></canvas>
-      <video width={640} height={320} src={testUrl} ref={videoRef} autoPlay muted controls hidden></video>
+      <video src={testUrl} ref={videoRef} autoPlay muted controls loop hidden></video>
     </>
   );
 }
