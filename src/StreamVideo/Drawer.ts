@@ -7,6 +7,8 @@ import { RenderPipelineBuilder } from "../utils/RenderPipelineBuilder";
 
 import { ComputePipelineBuilder } from "../utils/ComputePipelineBuilder";
 import processingShader from "./ProcessingShader.wgsl?raw";
+import meshShader from "./MeshShader.wgsl?raw";
+import { glMatrix, mat4, vec3 } from "gl-matrix";
 
 export class Drawer extends DrawSystem {
   constructor(canvas: HTMLCanvasElement, video: HTMLVideoElement) {
@@ -25,6 +27,11 @@ export class Drawer extends DrawSystem {
 
   debugTBundle: GPURenderBundle;
 
+  meshDrawBundle : GPURenderBundle;
+
+  model : mat4 = mat4.identity(mat4.create());
+  modelView : mat4 = mat4.identity(mat4.create());
+
   async Initialize(): Promise<boolean> {
     if (!this.ctx) throw new Error("no wgpu context has established");
     if (!this.drawUtil) throw new Error("no drawUtil has established");
@@ -35,12 +42,16 @@ export class Drawer extends DrawSystem {
       h: target.colorAttachment.height,
     };
 
-    {
-      // const box = new UnitBox();
-      // box.GenerateVBO(this.ctx.device);
-      // box.GenerateIBO(this.ctx.device);
-      // box.GenerateUBO(this.ctx.device);
+    const ratio = this.drawUtil.GetWidth() / this.drawUtil.GetHeight();
+    this.camera.ConfigureMovementSensitivity(2);
+    this.camera.SetPerspectiveProj(glMatrix.toRadian(60), ratio, 0.01, 5000);
+    this.camera.FromLookAt(
+      vec3.fromValues(0, 1, 10),
+      vec3.fromValues(0, 0, 0)
+    );
 
+    {
+      // compute shader
       this.processingPipe = await new ComputePipelineBuilder(this.ctx)
         .SetCSState(processingShader, "cs_main")
         .BuildAsync();
@@ -55,6 +66,7 @@ export class Drawer extends DrawSystem {
     let started = false;
     let texture: GPUTexture | undefined;
     let rezBuffer: GPUBuffer | undefined;
+    let box : UnitBox;
 
     const callback = () => {
       if (!this.ctx) throw new Error("no wgpu context has established");
@@ -88,6 +100,55 @@ export class Drawer extends DrawSystem {
           this.ctx.device.createSampler()
         );
         started = true;
+
+
+        // drawing mesh
+        {
+          box = new UnitBox();
+          box.GenerateVBO(this.ctx.device);
+          box.GenerateIBO(this.ctx.device);
+          box.GenerateUBO(this.ctx.device);
+    
+          const pipeline =  new RenderPipelineBuilder(this.ctx)
+            .SetVertexState(
+              box.GetVertexAttributeLayouts(),
+              meshShader,
+              "vs_main"
+            )
+            .SetFragState(target.colorAttachment.format, meshShader, "fs_main")
+            .SetDepthStencil(target.depthStencil?.format as GPUTextureFormat)
+            .SetPrimitiveState("triangle-list", "back", "ccw")
+            .Build();
+      
+          const bundleEncoder = this.ctx.device.createRenderBundleEncoder({
+            colorFormats: [target.colorAttachment.format],
+            depthStencilFormat: target.depthStencil?.format,
+          }) as GPURenderBundleEncoder;
+      
+          const bindGroup = this.ctx?.device.createBindGroup({
+            layout: pipeline.getBindGroupLayout(0),
+            entries: [
+              {
+                binding: 0,
+                resource: { buffer: box.ubo as GPUBuffer, label: "ubo" },
+              },
+              { binding: 1, resource: this.ctx.device.createSampler() },
+              {
+                binding: 2,
+                resource: texture.createView() as GPUTextureView,
+              },
+            ],
+            label: "bind group",
+          }) as GPUBindGroup;
+      
+          bundleEncoder.setPipeline(pipeline);
+          bundleEncoder.setVertexBuffer(0, box.vbo as GPUBuffer);
+          bundleEncoder.setIndexBuffer(box.ibo as GPUBuffer, "uint16");
+          bundleEncoder.setBindGroup(0, bindGroup);
+          bundleEncoder.drawIndexed(box.indices.length);
+      
+          this.meshDrawBundle = bundleEncoder.finish();
+        }
       }
 
       if (!this.externalTexture || this.externalTexture.expired) {
@@ -104,12 +165,21 @@ export class Drawer extends DrawSystem {
           layout: this.processingPipe.getBindGroupLayout(0),
           entries: [
             { binding: 0, resource: this.externalTexture },
-            { binding: 1, resource: texture.createView() },
-            { binding: 2, resource: { buffer: rezBuffer } },
+            { binding: 1, resource: texture?.createView() as GPUTextureView},
+            { binding: 2, resource: { buffer: rezBuffer as GPUBuffer} },
           ],
           label: "external texture debug bind group",
         });
       }
+
+      // update ubo
+      
+      mat4.rotateY(this.model, this.model, glMatrix.toRadian(0.1 * this.deltaTS));
+      box.UpdateTransform(
+        this.ctx?.device as GPUDevice,
+        mat4.mul(this.modelView, this.camera.GetView(), this.model),
+        this.camera.proj
+      );
 
       const renderTarget = this.drawUtil.GetRenderTarget();
       const encoder = this.ctx.device.createCommandEncoder();
@@ -132,14 +202,20 @@ export class Drawer extends DrawSystem {
               clearValue: [0.2, 0.5, 0.8, 1.0],
             },
           ],
-          label: "render pass: external texture debug",
+          depthStencilAttachment:{
+            view: renderTarget.depthStencil?.createView() as GPUTextureView,
+            depthClearValue: 1.0,
+            depthLoadOp: "clear",
+            depthStoreOp : "store",
+          },
+          label: "render pass: textured mesh",
         }) as GPURenderPassEncoder;
 
-        renderPass.setViewport(0, 0, canvasRez.w / 4, canvasRez.h / 4, 0, 1);
-        renderPass.executeBundles([this.eTBundle]);
+        renderPass.executeBundles([this.meshDrawBundle]);
         renderPass.end();
       }
 
+      // texture preview
       {
         const renderPass = encoder.beginRenderPass({
           colorAttachments: [
@@ -147,23 +223,47 @@ export class Drawer extends DrawSystem {
               loadOp: "load",
               storeOp: "store",
               view: renderTarget.colorAttachment.createView(),
-              clearValue: [0.2, 0.5, 0.8, 1.0],
+              // clearValue: [0.2, 0.5, 0.8, 1.0],
             },
           ],
           label: "render pass: external texture debug",
         }) as GPURenderPassEncoder;
-
-        renderPass.setViewport(
-          0,
-          canvasRez.h / 4,
-          canvasRez.w / 4,
-          canvasRez.h / 4,
-          0,
-          1
-        );
+        
+         // external texture 
+        renderPass.setViewport(0, 0, canvasRez.w / 4, canvasRez.h / 4, 0, 1);
+        renderPass.executeBundles([this.eTBundle]);
+        // compute shader result
+        renderPass.setViewport(0, canvasRez.h / 4, canvasRez.w / 4, canvasRez.h / 4,0,1);
         renderPass.executeBundles([this.debugTBundle]);
+
         renderPass.end();
       }
+
+      // // compute buffer result
+      // {
+      //   const renderPass = encoder.beginRenderPass({
+      //     colorAttachments: [
+      //       {
+      //         loadOp: "load",
+      //         storeOp: "store",
+      //         view: renderTarget.colorAttachment.createView(),
+      //         // clearValue: [0.2, 0.5, 0.8, 1.0],
+      //       },
+      //     ],
+      //     label: "render pass: external texture debug",
+      //   }) as GPURenderPassEncoder;
+
+      //   renderPass.setViewport(
+      //     0,
+      //     canvasRez.h / 4,
+      //     canvasRez.w / 4,
+      //     canvasRez.h / 4,
+      //     0,
+      //     1
+      //   );
+      //   renderPass.executeBundles([this.debugTBundle]);
+      //   renderPass.end();
+      // }
 
       this.ctx.device.queue.submit([encoder.finish()]);
 

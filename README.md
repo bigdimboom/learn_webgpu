@@ -113,3 +113,11 @@ Offscreen is the basics of a lot special effects, e.g. shadow map, deferred rend
 3. Texture Splatting
 
 ![Alt text](https://github.com/bigdimboom/learn_webgpu/blob/main/images/terrain.jpg "Chapter 9")
+
+
+## Chapter 10: Video Streaming
+1. Video streaming to ExternalTexture
+2. Sobel filter post processing in compute shader
+3. result on a textured cube
+4. multi-pass (compute pass, render passes)
+[![Watch the video](https://github.com/bigdimboom/learn_webgpu/blob/main/images/video_streaming.jpg "Chapter 9")](https://youtu.be/NW6BlnECCks)
