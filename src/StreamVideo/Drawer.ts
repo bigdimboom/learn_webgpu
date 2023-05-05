@@ -27,10 +27,10 @@ export class Drawer extends DrawSystem {
 
   debugTBundle: GPURenderBundle;
 
-  meshDrawBundle : GPURenderBundle;
+  meshDrawBundle: GPURenderBundle;
 
-  model : mat4 = mat4.identity(mat4.create());
-  modelView : mat4 = mat4.identity(mat4.create());
+  model: mat4 = mat4.identity(mat4.create());
+  modelView: mat4 = mat4.identity(mat4.create());
 
   async Initialize(): Promise<boolean> {
     if (!this.ctx) throw new Error("no wgpu context has established");
@@ -45,10 +45,7 @@ export class Drawer extends DrawSystem {
     const ratio = this.drawUtil.GetWidth() / this.drawUtil.GetHeight();
     this.camera.ConfigureMovementSensitivity(2);
     this.camera.SetPerspectiveProj(glMatrix.toRadian(60), ratio, 0.01, 5000);
-    this.camera.FromLookAt(
-      vec3.fromValues(0, 1, 10),
-      vec3.fromValues(0, 0, 0)
-    );
+    this.camera.FromLookAt(vec3.fromValues(0, 1, 10), vec3.fromValues(0, 0, 0));
 
     {
       // compute shader
@@ -66,7 +63,7 @@ export class Drawer extends DrawSystem {
     let started = false;
     let texture: GPUTexture | undefined;
     let rezBuffer: GPUBuffer | undefined;
-    let box : UnitBox;
+    let box: UnitBox;
 
     const callback = () => {
       if (!this.ctx) throw new Error("no wgpu context has established");
@@ -101,15 +98,14 @@ export class Drawer extends DrawSystem {
         );
         started = true;
 
-
         // drawing mesh
         {
           box = new UnitBox();
           box.GenerateVBO(this.ctx.device);
           box.GenerateIBO(this.ctx.device);
           box.GenerateUBO(this.ctx.device);
-    
-          const pipeline =  new RenderPipelineBuilder(this.ctx)
+
+          const pipeline = new RenderPipelineBuilder(this.ctx)
             .SetVertexState(
               box.GetVertexAttributeLayouts(),
               meshShader,
@@ -119,12 +115,12 @@ export class Drawer extends DrawSystem {
             .SetDepthStencil(target.depthStencil?.format as GPUTextureFormat)
             .SetPrimitiveState("triangle-list", "back", "ccw")
             .Build();
-      
+
           const bundleEncoder = this.ctx.device.createRenderBundleEncoder({
             colorFormats: [target.colorAttachment.format],
             depthStencilFormat: target.depthStencil?.format,
           }) as GPURenderBundleEncoder;
-      
+
           const bindGroup = this.ctx?.device.createBindGroup({
             layout: pipeline.getBindGroupLayout(0),
             entries: [
@@ -140,41 +136,43 @@ export class Drawer extends DrawSystem {
             ],
             label: "bind group",
           }) as GPUBindGroup;
-      
+
           bundleEncoder.setPipeline(pipeline);
           bundleEncoder.setVertexBuffer(0, box.vbo as GPUBuffer);
           bundleEncoder.setIndexBuffer(box.ibo as GPUBuffer, "uint16");
           bundleEncoder.setBindGroup(0, bindGroup);
           bundleEncoder.drawIndexed(box.indices.length);
-      
+
           this.meshDrawBundle = bundleEncoder.finish();
         }
       }
 
-      if (!this.externalTexture || this.externalTexture.expired) {
-        this.externalTexture = this.ctx.device.importExternalTexture({
-          source: this.video,
-        });
+      this.externalTexture = this.ctx.device.importExternalTexture({
+        source: this.video,
+      });
 
-        this.eTBundle = this.drawUtil.GenExternalTextureDebuggerBundle(
-          this.externalTexture,
-          this.eTSampler
-        );
+      this.eTBundle = this.drawUtil.GenExternalTextureDebuggerBundle(
+        this.externalTexture,
+        this.eTSampler
+      );
 
-        this.processingBindGroup = this.ctx.device.createBindGroup({
-          layout: this.processingPipe.getBindGroupLayout(0),
-          entries: [
-            { binding: 0, resource: this.externalTexture },
-            { binding: 1, resource: texture?.createView() as GPUTextureView},
-            { binding: 2, resource: { buffer: rezBuffer as GPUBuffer} },
-          ],
-          label: "external texture debug bind group",
-        });
-      }
+      this.processingBindGroup = this.ctx.device.createBindGroup({
+        layout: this.processingPipe.getBindGroupLayout(0),
+        entries: [
+          { binding: 0, resource: this.externalTexture },
+          { binding: 1, resource: texture?.createView() as GPUTextureView },
+          { binding: 2, resource: { buffer: rezBuffer as GPUBuffer } },
+        ],
+        label: "external texture debug bind group",
+      });
 
       // update ubo
-      
-      mat4.rotateY(this.model, this.model, glMatrix.toRadian(0.1 * this.deltaTS));
+
+      mat4.rotateY(
+        this.model,
+        this.model,
+        glMatrix.toRadian(0.1 * this.deltaTS)
+      );
       box.UpdateTransform(
         this.ctx?.device as GPUDevice,
         mat4.mul(this.modelView, this.camera.GetView(), this.model),
@@ -202,11 +200,11 @@ export class Drawer extends DrawSystem {
               clearValue: [0.2, 0.5, 0.8, 1.0],
             },
           ],
-          depthStencilAttachment:{
+          depthStencilAttachment: {
             view: renderTarget.depthStencil?.createView() as GPUTextureView,
             depthClearValue: 1.0,
             depthLoadOp: "clear",
-            depthStoreOp : "store",
+            depthStoreOp: "store",
           },
           label: "render pass: textured mesh",
         }) as GPURenderPassEncoder;
@@ -228,12 +226,19 @@ export class Drawer extends DrawSystem {
           ],
           label: "render pass: external texture debug",
         }) as GPURenderPassEncoder;
-        
-         // external texture 
+
+        // external texture
         renderPass.setViewport(0, 0, canvasRez.w / 4, canvasRez.h / 4, 0, 1);
         renderPass.executeBundles([this.eTBundle]);
         // compute shader result
-        renderPass.setViewport(0, canvasRez.h / 4, canvasRez.w / 4, canvasRez.h / 4,0,1);
+        renderPass.setViewport(
+          0,
+          canvasRez.h / 4,
+          canvasRez.w / 4,
+          canvasRez.h / 4,
+          0,
+          1
+        );
         renderPass.executeBundles([this.debugTBundle]);
 
         renderPass.end();
